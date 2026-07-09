@@ -17,43 +17,61 @@ const StatCard = ({ label, value, icon, color, to }) => (
 );
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState({});
+  const [counts, setCounts] = useState({});
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [customers, employees, orders] = await Promise.all([
-          api.get('/customers'),
-          api.get('/employees'),
-          api.get('/orders')
-        ]);
-        const o = orders.data;
-        setStats({
-          customers: customers.data.length,
-          employees: employees.data.length,
-          totalOrders: o.length,
-          pending: o.filter(x => x.status === 'pending').length,
-          completed: o.filter(x => x.status === 'completed').length,
-          cancelled: o.filter(x => x.status === 'cancelled').length,
+    api.get('http://localhost:8081/api/adminDashboard/GetAdminDashboard').then(({ data }) => {
+    //  const c = {};
+     // data.forEach(o => { c[o.status] = (c[o.status] || 0) + 1; });
+      //setCounts(c);
+      const o = data;
+      setCounts({
+          pending:o[0].newOrderCount,
+          design_pending:o[0].pendingDesignCount,
+          design_uploaded:o[0].designUploadedCount,
+          customer_pending:o[0].pendingOrderConfirmedCount,
+          customer_confirmed:o[0].orderConfirmedCount,
+          under_processing:o[0].orderUnderProductionCount
         });
-      } catch {}
-    };
-    load();
+    }).catch(() => {});
   }, []);
+
+  const tiles = [
+    { status: 'pending', label: 'Customer Orders', icon: '📥', color: 'orange', to: '/adminuser/orders/pending', desc: 'New / Rework orders' },
+    { status: 'design_pending', label: 'Design Pending', icon: '🎨', color: 'blue', to: '/adminuser/orders/design_pending', desc: 'Assigned, CAD awaited' },
+    { status: 'design_uploaded', label: 'Confirm Design', icon: '✅', color: '', to: '/adminuser/orders/design_uploaded', desc: 'CAD uploaded, review' },
+    { status: 'customer_pending', label: 'Cust. Confirmation', icon: '👤', color: 'teal', to: '/adminuser/orders/customer_pending', desc: 'Waiting for customer' },
+    { status: 'customer_confirmed', label: 'Order Confirmed', icon: '🔧', color: 'green', to: '/adminuser/orders/customer_confirmed', desc: 'Ready for production' },
+    { status: 'under_processing', label: 'Order Under Production', icon: '⚙️', color: 'red', to: '/adminuser/orders/under_processing', desc: 'In production' },
+  ];
 
   return (
     <div>
       <h5 className="fw-bold mb-4">Admin Dashboard</h5>
-      <div className="row row-cols-2 row-cols-md-3 g-3 mb-4">
-        <StatCard label="Total Customers" value={stats.customers} icon="👥" color="blue" to="/admin/customers" />
-        <StatCard label="Total Employees" value={stats.employees} icon="👤" color="" to="/admin/employees" />
-        <StatCard label="Total Orders" value={stats.totalOrders} icon="📦" color="orange" to="/admin/order-report" />
-        <StatCard label="Pending Orders" value={stats.pending} icon="⏳" color="teal" />
-        <StatCard label="Completed Orders" value={stats.completed} icon="✅" color="green" />
-        <StatCard label="Cancelled Orders" value={stats.cancelled} icon="❌" color="red" />
-      </div>
-
+     <div className="row row-cols-2 row-cols-md-3 g-3">
+             {tiles.map(t => (
+               <div className="col" key={t.status}>
+                 <Link to={t.to} className="text-decoration-none">
+                   <div className={`stat-card ${t.color}`}>
+                     <div className="d-flex justify-content-between">
+                       <div>
+                         <div className="text-muted small">{t.label}</div>
+                         <div className="fs-2 fw-bold">{counts[t.status] ?? 0}</div>
+                         <div className="text-muted" style={{ fontSize: '0.78rem' }}>{t.desc}</div>
+                       </div>
+                       <span style={{ fontSize: 36 }}>{t.icon}</span>
+                     </div>
+                   </div>
+                 </Link>
+               </div>
+             ))}
+           
+           </div>
+<div className="row row-cols-2 row-cols-md-3 g-3">
+  <br/>
+</div>
       <div className="row g-3">
+        <br/>
         {[
           { to: '/admin/customers', icon: '👥', label: 'Customer Master', desc: 'Add/edit customers' },
           { to: '/admin/employees', icon: '👤', label: 'Employee Master', desc: 'Manage staff' },

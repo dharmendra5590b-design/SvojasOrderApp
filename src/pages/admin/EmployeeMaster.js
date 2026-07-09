@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
 
-const DESIGNATIONS = ['admin_user', 'designer', 'data_entry'];
-const INIT = { employeeName: '', phoneNumber: '', email: '', designation: 'designer' };
+const DESIGNATIONS = [{Value:'ADMINUSER',Text:'Admin User'}, {Value:'DESIGNER',Text:'Designer'}, {Value:'Operator',Text:'Operator'}];
+const INIT = {employee_ID:0, employee_Name: '', mobile_Number: '', email_ID: '', designation: 'ADMINUSER','mode':'A' };
 
 const EmployeeMaster = () => {
   const [employees, setEmployees] = useState([]);
@@ -12,17 +12,18 @@ const EmployeeMaster = () => {
   const [editId, setEditId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
-
+const [showPassword, setShowPassword] = useState({});
   const load = async () => {
-    try { const { data } = await api.get('/employees'); setEmployees(data); } catch {}
+    try { const { data:emp } = await api.post('http://localhost:8081/api/customer/getemployee',{employee_ID:0,mode:'S'}); 
+    setEmployees(emp.data); } catch {}
   };
   useEffect(() => { load(); }, []);
 
   const validate = () => {
     const e = {};
-    if (!form.employeeName.trim()) e.employeeName = 'Required';
-    if (!/^[0-9]{10}$/.test(form.phoneNumber)) e.phoneNumber = 'Valid 10-digit phone required';
-    if (form.email && !/\S+@\S+\.\S+/.test(form.email)) e.email = 'Invalid email';
+    if (!form.employee_Name.trim()) e.employee_Name = 'Required';
+    if (!/^[0-9]{10}$/.test(form.mobile_Number)) e.mobile_Number = 'Valid 10-digit phone required';
+    if (form.email_ID && !/\S+@\S+\.\S+/.test(form.email_ID)) e.email_ID = 'Invalid email';
     if (!form.designation) e.designation = 'Required';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -34,11 +35,27 @@ const EmployeeMaster = () => {
     setLoading(true);
     try {
       if (editId) {
-        await api.put(`/employees/${editId}`, form);
-        toast.success('Employee updated');
+      const {data}=  await api.post(`http://localhost:8081/api/customer/saveemployee`, form);
+         if(data.statusCode===1)
+          {   
+         toast.success('Employee updated');
+          }
+          else
+          {
+            toast.error(data?.message || 'Error updating Employee');
+            return false;
+          }
       } else {
-        await api.post('/employees', form);
-        toast.success('Employee created');
+       const {data}= await api.post('http://localhost:8081/api/customer/saveemployee', form);
+         if(data.statusCode===1)
+          {   
+         toast.success('Employee Created');
+          }
+          else
+          {
+            toast.error(data?.message || 'Error creating Employee');
+            return false;
+          }
       }
       setShowModal(false); setForm(INIT); setEditId(null); load();
     } catch (err) {
@@ -47,7 +64,7 @@ const EmployeeMaster = () => {
   };
 
   const designationBadge = (d) => {
-    const map = { admin_user: 'primary', designer: 'success', data_entry: 'info' };
+    const map = { ADMINUSER: 'primary', DESIGNER: 'success', OPERATOR: 'info' };
     return <span className={`badge bg-${map[d] || 'secondary'}`}>{d.replace('_', ' ').toUpperCase()}</span>;
   };
 
@@ -65,26 +82,54 @@ const EmployeeMaster = () => {
           <div className="table-responsive">
             <table className="table table-hover mb-0">
               <thead className="table-light">
-                <tr><th>#</th><th>Name</th><th>Phone</th><th>Email</th><th>Designation</th><th>Actions</th></tr>
+                <tr><th>#</th><th>Name</th><th>Phone</th><th>Email</th><th>Designation</th><th>Password</th><th>Actions</th></tr>
               </thead>
               <tbody>
                 {employees.length === 0 ? (
                   <tr><td colSpan={6} className="text-center py-4 text-muted">No employees</td></tr>
                 ) : employees.map((e, i) => (
-                  <tr key={e._id}>
+                  <tr key={e.employee_ID}>
                     <td>{i + 1}</td>
-                    <td className="fw-semibold">{e.employeeName}</td>
-                    <td>{e.phoneNumber}</td>
-                    <td>{e.email || '—'}</td>
+                    <td className="fw-semibold">{e.employee_Name}</td>
+                    <td>{e.mobile_Number}</td>
+                    <td>{e.email_ID || '—'}</td>
                     <td>{designationBadge(e.designation)}</td>
                     <td>
+    <div className="d-flex align-items-center gap-2">
+      <span>
+        {showPassword[e.employee_ID]
+          ? e.password
+          : '••••••••'}
+      </span>
+
+      <button
+        type="button"
+        className="btn btn-sm btn-link p-0"
+        onClick={() =>
+          setShowPassword(prev => ({
+            ...prev,
+            [e.employee_ID]: !prev[e.employee_ID]
+          }))
+        }
+      >
+        <i
+          className={`bi ${
+            showPassword[e.employee_ID]
+              ? 'bi-eye-slash'
+              : 'bi-eye'
+          }`}
+        ></i>
+      </button>
+    </div>
+  </td>
+                    <td>
                       <button className="btn btn-sm btn-outline-primary me-1" onClick={() => {
-                        setForm({ employeeName: e.employeeName, phoneNumber: e.phoneNumber, email: e.email || '', designation: e.designation });
-                        setEditId(e._id); setErrors({}); setShowModal(true);
+                        setForm({ employee_ID:e.employee_ID, employee_Name: e.employee_Name, mobile_Number: e.mobile_Number, email_ID: e.email_ID || '', designation: e.designation,mode:'M' });
+                        setEditId(e.employee_ID); setErrors({}); setShowModal(true);
                       }}><i className="bi bi-pencil"></i></button>
                       <button className="btn btn-sm btn-outline-danger" onClick={async () => {
                         if (!window.confirm('Delete employee?')) return;
-                        try { await api.delete(`/employees/${e._id}`); toast.success('Deleted'); load(); }
+                        try {const {data}= await api.post(`http://localhost:8081/api/customer/saveemployee`,{employee_ID:e.employee_ID,mode:'D'}); toast.success(data?.message); load(); }
                         catch { toast.error('Error'); }
                       }}><i className="bi bi-trash"></i></button>
                     </td>
@@ -105,30 +150,32 @@ const EmployeeMaster = () => {
                 <button className="btn-close" onClick={() => setShowModal(false)} />
               </div>
               <form onSubmit={handleSubmit}>
+                 <input type='hidden' value={form['employee_ID']} name='employee_ID'></input>
+                <input type='hidden' value={form['mode']} name='mode'></input>
                 <div className="modal-body">
                   <div className="mb-3">
                     <label className="form-label fw-semibold">Employee Name *</label>
-                    <input className={`form-control ${errors.employeeName ? 'is-invalid' : ''}`}
-                      value={form.employeeName} onChange={e => setForm({ ...form, employeeName: e.target.value })} />
-                    {errors.employeeName && <div className="invalid-feedback">{errors.employeeName}</div>}
+                    <input className={`form-control ${errors.employee_Name ? 'is-invalid' : ''}`}
+                      value={form.employee_Name} onChange={e => setForm({ ...form, employee_Name: e.target.value })} />
+                    {errors.employee_Name && <div className="invalid-feedback">{errors.employee_Name}</div>}
                   </div>
                   <div className="mb-3">
-                    <label className="form-label fw-semibold">Phone Number *</label>
-                    <input type="tel" maxLength={10} className={`form-control ${errors.phoneNumber ? 'is-invalid' : ''}`}
-                      value={form.phoneNumber} onChange={e => setForm({ ...form, phoneNumber: e.target.value })} disabled={!!editId} />
-                    {errors.phoneNumber && <div className="invalid-feedback">{errors.phoneNumber}</div>}
+                    <label className="form-label fw-semibold">Mobile Number *</label>
+                    <input type="tel" maxLength={10} className={`form-control ${errors.mobile_Number ? 'is-invalid' : ''}`}
+                      value={form.mobile_Number} onChange={e => setForm({ ...form, mobile_Number: e.target.value })} disabled={!!editId} />
+                    {errors.mobile_Number && <div className="invalid-feedback">{errors.mobile_Number}</div>}
                   </div>
                   <div className="mb-3">
                     <label className="form-label fw-semibold">Email</label>
-                    <input type="email" className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-                      value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-                    {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+                    <input type="email" className={`form-control ${errors.email_ID ? 'is-invalid' : ''}`}
+                      value={form.email_ID} onChange={e => setForm({ ...form, email_ID: e.target.value })} />
+                    {errors.email && <div className="invalid-feedback">{errors.email_ID}</div>}
                   </div>
                   <div className="mb-3">
                     <label className="form-label fw-semibold">Designation *</label>
                     <select className={`form-select ${errors.designation ? 'is-invalid' : ''}`}
                       value={form.designation} onChange={e => setForm({ ...form, designation: e.target.value })} disabled={!!editId}>
-                      {DESIGNATIONS.map(d => <option key={d} value={d}>{d.replace('_', ' ').toUpperCase()}</option>)}
+                      {DESIGNATIONS.map(d => <option key={d.Value} value={d.Value}>{d.Text.replace('_', ' ').toUpperCase()}</option>)}
                     </select>
                     {errors.designation && <div className="invalid-feedback">{errors.designation}</div>}
                   </div>

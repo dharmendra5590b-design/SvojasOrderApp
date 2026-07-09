@@ -40,7 +40,7 @@ import DesignerDashboard from './pages/designer/DesignerDashboard';
 const ProtectedRoute = ({ children, roles }) => {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" />;
-  if (roles && !roles.includes(user.role)) return <Navigate to="/unauthorized" />;
+  if (roles && !roles.includes(user.user_Type)) return <Navigate to="/unauthorized" />;
   if (user.isFirstLogin && window.location.pathname !== '/change-password') {
     return <Navigate to="/change-password" />;
   }
@@ -57,7 +57,7 @@ const RoleRouter = () => {
     designer: '/designer/orders',
     data_entry: '/admin/ledger'
   };
-  return <Navigate to={routes[user.role] || '/login'} />;
+  return <Navigate to={routes[user.user_Type] || '/login'} />;
 };
 
 function App() {
@@ -72,7 +72,8 @@ function App() {
           <Route path="/" element={<RoleRouter />} />
 
           {/* ADMIN */}
-          <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminLayout /></ProtectedRoute>}>
+          <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}>
+            <AdminLayout /></ProtectedRoute>}>
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="customers" element={<CustomerMaster />} />
             <Route path="employees" element={<EmployeeMaster />} />
@@ -83,14 +84,15 @@ function App() {
           </Route>
 
           {/* ADMIN USER */}
-          <Route path="/adminuser" element={<ProtectedRoute roles={['admin_user']}><AdminUserLayout role="admin_user" /></ProtectedRoute>}>
+          <Route path="/adminuser" element={<ProtectedRoute roles={['ADMINUSER','ADMIN']}>
+            <AdminUserLayout role="ADMINUSER" /></ProtectedRoute>}>
             <Route path="dashboard" element={<AdminUserDashboard />} />
             <Route path="orders/:status?" element={<OrderWorkflow />} />
             <Route path="order-report" element={<CustomerOrderReport />} />
           </Route>
 
           {/* CUSTOMER */}
-          <Route path="/customer" element={<ProtectedRoute roles={['customer']}><CustomerLayout /></ProtectedRoute>}>
+          <Route path="/customer" element={<ProtectedRoute roles={['CUSTOMER']}><CustomerLayout /></ProtectedRoute>}>
             <Route path="orders" element={<OrderSearch />} />
             <Route path="new-order" element={<NewOrder />} />
             <Route path="confirm-order" element={<ConfirmOrder />} />
@@ -98,7 +100,7 @@ function App() {
           </Route>
 
           {/* DESIGNER */}
-          <Route path="/designer" element={<ProtectedRoute roles={['designer']}><DesignerLayout /></ProtectedRoute>}>
+          <Route path="/designer" element={<ProtectedRoute roles={['DESIGNER']}><DesignerLayout /></ProtectedRoute>}>
             <Route path="orders" element={<DesignerDashboard />} />
           </Route>
 

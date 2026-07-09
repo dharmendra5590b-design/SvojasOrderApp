@@ -10,11 +10,14 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   const login = async (mobileNumber, password) => {
-    const { data } = await api.post('/auth/login', { mobileNumber, password });
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
-    setUser(data.user);
-    return data.user;
+    const { data:user } = await api.post('http://localhost:8081/api/Login/ValidateUser', { UserName:mobileNumber, Password:password });
+    if(user.statusCode==1)
+    {
+    localStorage.setItem('token', user.data.token);
+    localStorage.setItem('user', JSON.stringify(user.data));
+    setUser(user.data);
+    }
+    return user;
   };
 
   const logout = () => {

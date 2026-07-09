@@ -25,14 +25,22 @@ const ChangePasswordPage = () => {
     if (!validate()) return;
     setLoading(true);
     try {
-      await api.post('/auth/change-password', {
-        currentPassword: form.currentPassword,
-        newPassword: form.newPassword
+     const {data}= await api.post('http://localhost:8081/api/Login/changepassword', {
+        password: form.currentPassword,
+        newPassword: form.newPassword,
+        userID:user.entity_ID
       });
+      if(data.statusCode==1)
+      {
       toast.success('Password changed successfully!');
       updateUser({ isFirstLogin: false });
-      const routes = { admin: '/admin/dashboard', admin_user: '/adminuser/dashboard', customer: '/customer/orders', designer: '/designer/orders', data_entry: '/admin/ledger' };
-      navigate(routes[user?.role] || '/');
+      const routes = { ADMIN: '/admin/dashboard', ADMINUSER: '/adminuser/dashboard', CUSTOMER: '/customer/orders', DESGINER: '/designer/orders', OPERATOR: '/admin/ledger' };
+      navigate(routes[user?.user_Type] || '/');
+      }
+      else
+      {
+         toast.error(data?.message || 'Failed to change password');
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to change password');
     } finally {

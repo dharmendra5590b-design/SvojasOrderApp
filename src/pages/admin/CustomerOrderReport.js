@@ -1,30 +1,70 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
-
+import OrderViewModal from '../adminuser/OrderViewModal';
 const STATUS_COLORS = {
   pending: 'warning', design_pending: 'info', design_uploaded: 'primary',
   design_confirmed: 'success', customer_pending: 'warning', customer_confirmed: 'success',
   rework_requested: 'danger', assigned_development: 'primary', under_processing: 'secondary',
   completed: 'success', cancelled: 'danger'
 };
+const STATUS_META = {
+  pending:              { label: 'Pending',              color: 'warning'   },
+  design_pending:       { label: 'Design Pending',       color: 'info'      },
+  design_uploaded:      { label: 'CAD Uploaded',         color: 'primary'   },
+  design_confirmed:     { label: 'Design Confirmed',     color: 'success'   },
+  customer_pending:     { label: 'Awaiting Your Approval', color: 'warning' },
+  customer_confirmed:   { label: 'You Approved',         color: 'success'   },
+  rework_requested:     { label: 'Rework Requested',     color: 'danger'    },
+  assigned_development: { label: 'Sent to Production',   color: 'primary'   },
+  under_processing:     { label: 'Under Processing',     color: 'secondary' },
+  completed:            { label: 'Completed',            color: 'success'   },
+  cancelled:            { label: 'Cancelled',            color: 'danger'    },
+};
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50];
 const CustomerOrderReport = () => {
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const [filters, setFilters] = useState({ startDate: '', endDate: '', customerId: '', status: '' });
+  const [filters, setFilters] = useState({ order_FromDT: '', order_ToDT: '', customer_ID: '', status: '' });
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => { api.get('/customers').then(r => setCustomers(r.data)).catch(() => {}); }, []);
+const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize,    setPageSize]    = useState(10);
+  const [viewOrderId, setViewOrderId] = useState(null);
+  useEffect(() => { api.post('http://localhost:8081/api/customer/getcustomer',{customer_ID:0,mode:'L'}).then(r => setCustomers(r.data.data)).catch(() => {}); }, []);
 
   const load = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams(filters).toString();
-      const { data } = await api.get(`/reports/orders?${params}`);
+      const payload = {
+    order_FromDT: filters.order_FromDT || null,
+    order_ToDT: filters.order_ToDT || null,
+    customer_ID: filters.customer_ID || null,
+    status: filters.status || ''
+  };
+
+
+      const { data } = await api.post('http://localhost:8081/api/order/GetGridOrder', payload);
       setOrders(data);
     } catch {} finally { setLoading(false); }
   };
   useEffect(() => { load(); }, []);
+// ─── Pagination calculations ───
+  const totalPages  = Math.max(1, Math.ceil(orders.length / pageSize));
+  const safePage    = Math.min(currentPage, totalPages);
+  const startIndex  = (safePage - 1) * pageSize;
+  const paginated   = orders.slice(startIndex, startIndex + pageSize);
+
+  // Build page number array (show max 5 pages around current)
+  const getPageNumbers = () => {
+    const pages = [];
+    const delta = 2;
+    const left  = Math.max(1, safePage - delta);
+    const right = Math.min(totalPages, safePage + delta);
+    if (left > 1)          { pages.push(1); if (left > 2) pages.push('...'); }
+    for (let i = left; i <= right; i++) pages.push(i);
+    if (right < totalPages) { if (right < totalPages - 1) pages.push('...'); pages.push(totalPages); }
+    return pages;
+  };
 
   const exportCSV = () => {
     const rows = [['Order#', 'Date', 'Customer', 'Design', 'Status', 'Designer', 'Assigned Date', 'Completed Date']];
@@ -40,6 +80,9 @@ const CustomerOrderReport = () => {
     a.download = 'order_report.csv';
     a.click();
   };
+const YN = v => v
+    ? <span className="badge bg-success">Yes</span>
+    : <span className="badge bg-light text-dark">No</span>;
 
   return (
     <div>
@@ -61,19 +104,19 @@ const CustomerOrderReport = () => {
             <div className="col-md-3">
               <label className="form-label fw-semibold small">From Date</label>
               <input type="date" className="form-control form-control-sm"
-                value={filters.startDate} onChange={e => setFilters({ ...filters, startDate: e.target.value })} />
+                value={filters.startDate} onChange={e => setFilters({ ...filters, order_FromDT: e.target.value })} />
             </div>
             <div className="col-md-3">
               <label className="form-label fw-semibold small">To Date</label>
               <input type="date" className="form-control form-control-sm"
-                value={filters.endDate} onChange={e => setFilters({ ...filters, endDate: e.target.value })} />
+                value={filters.endDate} onChange={e => setFilters({ ...filters, order_ToDT: e.target.value })} />
             </div>
             <div className="col-md-3">
               <label className="form-label fw-semibold small">Customer</label>
               <select className="form-select form-select-sm"
-                value={filters.customerId} onChange={e => setFilters({ ...filters, customerId: e.target.value })}>
+                value={filters.customer_ID} onChange={e => setFilters({ ...filters, customer_ID: e.target.value })}>
                 <option value="">All</option>
-                {customers.map(c => <option key={c._id} value={c._id}>{c.customerName}</option>)}
+                {customers.map(c => <option key={c.customer_ID} value={c.customer_ID}>{c.customer_Name}</option>)}
               </select>
             </div>
             <div className="col-md-2">
@@ -91,41 +134,141 @@ const CustomerOrderReport = () => {
         </div>
       </div>
 
-      <div className="card">
-        <div className="card-body p-0">
-          {loading ? <div className="text-center py-4"><span className="spinner-border" /></div> : (
-            <div className="table-responsive">
-              <table className="table table-sm mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th>Order #</th><th>Date</th><th>Customer</th><th>Design</th>
-                    <th>Status</th><th>Designer</th><th>Completed</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.length === 0 ? (
-                    <tr><td colSpan={7} className="text-center py-4 text-muted">No orders found</td></tr>
-                  ) : orders.map(o => (
-                    <tr key={o._id}>
-                      <td><strong>{o.orderNumber}</strong></td>
-                      <td>{new Date(o.orderDate).toLocaleDateString('en-IN')}</td>
-                      <td>{o.customerId?.customerName}</td>
-                      <td>{o.design || '—'}</td>
-                      <td>
-                        <span className={`badge bg-${STATUS_COLORS[o.status] || 'secondary'}`}>
-                          {o.status.replace(/_/g, ' ').toUpperCase()}
-                        </span>
-                      </td>
-                      <td>{o.designerId?.employeeName || '—'}</td>
-                      <td>{o.completedDate ? new Date(o.completedDate).toLocaleDateString('en-IN') : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
+     {/* Table */}
+           <div className="card">
+             <div className="card-body p-0">
+               {loading
+                 ? <div className="text-center py-5"><span className="spinner-border text-primary" /></div>
+                 : (
+                   <div className="table-responsive">
+                     <table className="table table-hover align-middle mb-0">
+                       <thead className="table-light">
+                         <tr>
+                           <th>Order #</th>
+                           <th>Order Number</th>
+                           <th>Date</th>
+                           <th>Design</th>
+                           <th>Delivery Date</th>
+                           <th>Designer&nbsp;Assigned</th>
+                           <th>Design&nbsp;Confirmed</th>
+                           <th>You&nbsp;Approved</th>
+                           <th>Sent to Prod.</th>
+                           <th>Completed</th>
+                           <th>Status</th>
+                           <th className="text-end">Actions</th>
+                         </tr>
+                       </thead>
+                       <tbody>
+                         {paginated.length === 0
+                           ? <tr><td colSpan={10} className="text-center py-5 text-muted">No orders found</td></tr>
+                           : paginated.map(o => {
+                             const meta   = STATUS_META[o.status] || { label: o.status, color: 'secondary' };
+                             const canEdit = o.is_Assigned_Designer === 'No';
+                             return (
+                               <tr key={o._id}>
+                                 <td><strong>{o.order_ID}</strong></td>
+                                 <td>{o.order_Number}</td>
+                                 <td style={{ whiteSpace: 'nowrap' }}>{new Date(o.order_Date).toLocaleDateString('en-IN')}</td>
+                                 <td>{o.design || '—'}</td>
+                                 <td style={{ whiteSpace: 'nowrap' }}>{new Date(o.delivery_Date).toLocaleDateString('en-IN')}</td>
+                                 <td className="text-center">
+                                   {YN(o.designer_Assgined_DT)}
+                                   {o.designer_Assgined_DT && <div className="text-muted" style={{ fontSize: '0.72rem' }}>{new Date(o.designer_Assgined_DT).toLocaleDateString('en-IN')}</div>}
+                                 </td>
+                                 <td className="text-center">
+                                   {YN(o.design_Approved_DT)}
+                                   {o.design_Approved_DT && <div className="text-muted" style={{ fontSize: '0.72rem' }}>{new Date(o.design_Approved_DT).toLocaleDateString('en-IN')}</div>}
+                                 </td>
+                                 <td className="text-center">
+                                   {YN(o.order_Confirmed_DT)}
+                                   {o.order_Confirmed_DT && <div className="text-muted" style={{ fontSize: '0.72rem' }}>{new Date(o.order_Confirmed_DT).toLocaleDateString('en-IN')}</div>}
+                                 </td>
+                                 <td className="text-center">
+                                   {YN(o.production_Assigned_DT)}
+                                   {o.production_Assigned_DT && <div className="text-muted" style={{ fontSize: '0.72rem' }}>{new Date(o.production_Assigned_DT).toLocaleDateString('en-IN')}</div>}
+                                 </td>
+                                 <td className="text-center">
+                                   {YN(o.order_Completed_DT)}
+                                   {o.order_Completed_DT && <div className="text-muted" style={{ fontSize: '0.72rem' }}>{new Date(o.order_Completed_DT).toLocaleDateString('en-IN')}</div>}
+                                 </td>
+                                 <td>
+                                   <span className={`badge bg-${meta.color} status-badge`}>{meta.label}</span>
+                                 </td>
+                                 <td className="text-end" style={{ whiteSpace: 'nowrap' }}>
+                                   <button className="btn btn-sm btn-outline-primary me-1" onClick={() => setViewOrderId(o.order_ID)}>
+                                     <i className="bi bi-eye"></i>
+                                   </button>
+                                 </td>
+                               </tr>
+                             );
+                           })
+                         }
+                       </tbody>
+                     </table>
+                   </div>
+                 )}
+             </div>
+     
+             {/* ─── Pagination Footer ─── */}
+             {orders.length > 0 && (
+               <div className="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+     
+                 {/* Left: record count + page-size selector */}
+                 <div className="d-flex align-items-center gap-2 text-muted small">
+                   <span>
+                     Showing {startIndex + 1}–{Math.min(startIndex + pageSize, orders.length)} of {orders.length} orders
+                     {orders.length}
+                   </span>
+                   <select
+                     className="form-select form-select-sm"
+                     style={{ width: 'auto' }}
+                     value={pageSize}
+                     onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                   >
+                     {PAGE_SIZE_OPTIONS.map(n => (
+                       <option key={n} value={n}>{n} / page</option>
+                     ))}
+                   </select>
+                 </div>
+     
+                 {/* Right: page buttons */}
+                 {totalPages > 1 && (
+                   <nav>
+                     <ul className="pagination pagination-sm mb-0">
+                       {/* Prev */}
+                       <li className={`page-item ${safePage === 1 ? 'disabled' : ''}`}>
+                         <button className="page-link" onClick={() => setCurrentPage(safePage - 1)}>
+                           <i className="bi bi-chevron-left"></i>
+                         </button>
+                       </li>
+     
+                       {/* Page numbers */}
+                       {getPageNumbers().map((p, idx) =>
+                         p === '...'
+                           ? <li key={`ellipsis-${idx}`} className="page-item disabled"><span className="page-link">…</span></li>
+                           : <li key={p} className={`page-item ${p === safePage ? 'active' : ''}`}>
+                               <button className="page-link" onClick={() => setCurrentPage(p)}>{p}</button>
+                             </li>
+                       )}
+     
+                       {/* Next */}
+                       <li className={`page-item ${safePage === totalPages ? 'disabled' : ''}`}>
+                         <button className="page-link" onClick={() => setCurrentPage(safePage + 1)}>
+                           <i className="bi bi-chevron-right"></i>
+                         </button>
+                       </li>
+                     </ul>
+                   </nav>
+                 )}
+               </div>
+             )}
+           </div>
+            {/* Order View + Action Modal */}
+      <OrderViewModal
+        orderId={viewOrderId}
+        onClose={() => setViewOrderId(null)}
+        onOrderUpdated={load}
+      />
     </div>
   );
 };

@@ -25,10 +25,15 @@ const LoginPage = () => {
     setLoading(true);
     try {
       const user = await login(form.mobileNumber, form.password);
+      if(user.statusCode!==1)
+      {
+        toast.error(user?.message || 'Login failed');
+        return;
+      }
       toast.success('Login successful!');
       if (user.isFirstLogin) { navigate('/change-password'); return; }
-      const routes = { admin: '/admin/dashboard', admin_user: '/adminuser/dashboard', customer: '/customer/orders', designer: '/designer/orders', data_entry: '/admin/ledger' };
-      navigate(routes[user.role] || '/');
+      const routes = { ADMIN: '/admin/dashboard', ADMINUSER: '/adminuser/dashboard', CUSTOMER: '/customer/orders', DESIGNER: '/designer/orders', OPERATOR: '/admin/ledger' };
+      navigate(routes[user.data.user_Type] || '/');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed');
     } finally {
@@ -40,8 +45,12 @@ const LoginPage = () => {
     <div className="login-wrapper">
       <div className="login-card">
         <div className="text-center mb-4">
-          <div style={{ fontSize: 48, color: '#7c3aed' }}>💎</div>
-          <h4 className="fw-bold mt-2 mb-0">Jewellery Orders</h4>
+          <img
+  src="/assets/logo.jpg"
+  alt="Logo"
+  style={{ width: 80, height: 80, objectFit: 'contain' }}
+/>
+          <h4 className="fw-bold mt-2 mb-0">Jewel Quote</h4>
           <small className="text-muted">Sign in to your account</small>
         </div>
 
@@ -83,18 +92,9 @@ const LoginPage = () => {
             {loading ? <><span className="spinner-border spinner-border-sm me-2" />Signing in...</> : 'Sign In'}
           </button>
 
-          <div className="text-center mt-3">
-            <Link to="/forgot-password" className="text-decoration-none small" style={{ color: '#7c3aed' }}>
-              Forgot Password?
-            </Link>
-          </div>
         </form>
 
-        <div className="mt-4 p-3 rounded" style={{ background: '#f5f4fb', fontSize: '0.8rem' }}>
-          <strong>Demo Credentials:</strong><br />
-          Admin: <code>9999999999</code> / <code>999999</code><br />
-          Default password = last 6 digits of mobile
-        </div>
+        
       </div>
     </div>
   );

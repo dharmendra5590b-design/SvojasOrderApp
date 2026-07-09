@@ -5,26 +5,28 @@ import api from '../../services/api';
 const LedgerEntry = () => {
   const [entries, setEntries] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const [form, setForm] = useState({ customerId: '', particular: '', goldWeight: '', amount: '', entryDate: new Date().toISOString().split('T')[0] });
+  const [form, setForm] = useState({ customer_ID: '',voucher:'', particular: '', goldIn: '', amountIn: '', mode:'A' });
   const [errors, setErrors] = useState({});
   const [filterCustomer, setFilterCustomer] = useState('');
   const [loading, setLoading] = useState(false);
 
   const loadAll = async () => {
     try {
-      const [ent, cust] = await Promise.all([
-        api.get(`/ledger${filterCustomer ? `?customerId=${filterCustomer}` : ''}`),
-        api.get('/customers')
+      const [cust] = await Promise.all([
+        api.post('http://localhost:8081/api/customer/getcustomer',{customer_ID:0,mode:'L'})
       ]);
-      setEntries(ent.data); setCustomers(cust.data);
+     setCustomers(cust.data.data);
     } catch {}
   };
   useEffect(() => { loadAll(); }, [filterCustomer]);
 
   const validate = () => {
     const e = {};
-    if (!form.customerId) e.customerId = 'Select customer';
+    if (!form.customer_ID) e.customer_ID = 'Select customer';
+    if (!form.voucher.trim()) e.voucher = 'Required';
     if (!form.particular.trim()) e.particular = 'Required';
+    if (!form.goldIn) e.goldIn = 'Required';
+    if (!form.amountIn) e.amountIn = 'Required';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -34,10 +36,18 @@ const LedgerEntry = () => {
     if (!validate()) return;
     setLoading(true);
     try {
-      await api.post('/ledger', form);
-      toast.success('Entry added');
-      setForm({ customerId: '', particular: '', goldWeight: '', amount: '', entryDate: new Date().toISOString().split('T')[0] });
-      loadAll();
+   const {data}=   await api.post('http://localhost:8081/api/customer/SaveCustomerLedgerCredit', form);
+      if(data.statusCode===1)
+            {   
+           toast.success(data?.message);
+            }
+            else
+            {
+              toast.error(data?.message || 'Error saving ledger');
+              return false;
+            }
+      setForm({ customer_ID: '',voucher:'', particular: '', goldIn: '', amountIn: '','mode':'A' });
+     // loadAll();
     } catch (err) {
       toast.error('Error saving entry');
     } finally { setLoading(false); }
@@ -52,14 +62,21 @@ const LedgerEntry = () => {
             <div className="card-header">New Entry</div>
             <div className="card-body">
               <form onSubmit={handleSubmit}>
+                <input type='hidden' value={form['mode']} name='mode'></input>
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Customer *</label>
-                  <select className={`form-select ${errors.customerId ? 'is-invalid' : ''}`}
-                    value={form.customerId} onChange={e => setForm({ ...form, customerId: e.target.value })}>
+                  <select className={`form-select ${errors.customer_ID ? 'is-invalid' : ''}`}
+                    value={form.customer_ID} onChange={e => setForm({ ...form, customer_ID: e.target.value })}>
                     <option value="">Select Customer</option>
-                    {customers.map(c => <option key={c._id} value={c._id}>{c.customerName} ({c.customerCode})</option>)}
+                    {customers.map(c => <option key={c.customer_ID} value={c.customer_ID}>{c.customer_Name}</option>)}
                   </select>
-                  {errors.customerId && <div className="invalid-feedback">{errors.customerId}</div>}
+                  {errors.customer_ID && <div className="invalid-feedback">{errors.customer_ID}</div>}
+                </div>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Voucher *</label>
+                  <input className={`form-control ${errors.voucher ? 'is-invalid' : ''}`}
+                    value={form.voucher} onChange={e => setForm({ ...form, voucher: e.target.value })} />
+                  {errors.voucher && <div className="invalid-feedback">{errors.voucher}</div>}
                 </div>
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Particular *</label>
@@ -69,20 +86,37 @@ const LedgerEntry = () => {
                 </div>
                 <div className="row g-2 mb-3">
                   <div className="col">
-                    <label className="form-label fw-semibold">Gold Weight</label>
-                    <input type="number" step="0.001" className="form-control" placeholder="-999 to any"
-                      value={form.goldWeight} onChange={e => setForm({ ...form, goldWeight: e.target.value })} />
+                    <label className="form-label fw-semibold">Gold Received *</label>
+                    <input type="number" step="0.001" className={`form-control ${errors.goldIn ? 'is-invalid' : ''}`} placeholder="Gold Received (-999)"
+                      value={form.goldIn} onChange={e => {
+    const value = e.target.value;
+
+    // Allow negative numbers with up to 3 decimal places
+    if (/^-?\d*\.?\d{0,3}$/.test(value) || value === "") {
+      setForm({ ...form, goldIn: value });
+    }
+  }}
+ />
+                      {errors.goldIn && <div className="invalid-feedback">{errors.goldIn}</div>}
                   </div>
                   <div className="col">
-                    <label className="form-label fw-semibold">Amount</label>
-                    <input type="number" step="0.01" className="form-control"
-                      value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
+                    <label className="form-label fw-semibold">Amount Received *</label>
+                  <input
+  type="number"
+  step="0.01"
+  className={`form-control ${errors.amountIn ? 'is-invalid' : ''}`}
+  value={form.amountIn}
+  onChange={e => {
+    const value = e.target.value;
+
+    // Allow negative numbers with up to 2 decimal places
+    if (/^-?\d*\.?\d{0,2}$/.test(value) || value === "") {
+      setForm({ ...form, amountIn: value });
+    }
+  }}
+/>
+                  {errors.amountIn && <div className="invalid-feedback">{errors.amountIn}</div>}
                   </div>
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">Entry Date</label>
-                  <input type="date" className="form-control"
-                    value={form.entryDate} onChange={e => setForm({ ...form, entryDate: e.target.value })} />
                 </div>
                 <button type="submit" className="btn btn-primary w-100" disabled={loading}>
                   {loading ? 'Saving...' : 'Add Entry'}
@@ -92,42 +126,7 @@ const LedgerEntry = () => {
           </div>
         </div>
 
-        <div className="col-md-7">
-          <div className="card">
-            <div className="card-header d-flex justify-content-between align-items-center">
-              <span>Ledger Entries</span>
-              <select className="form-select form-select-sm" style={{ width: 180 }}
-                value={filterCustomer} onChange={e => setFilterCustomer(e.target.value)}>
-                <option value="">All Customers</option>
-                {customers.map(c => <option key={c._id} value={c._id}>{c.customerName}</option>)}
-              </select>
-            </div>
-            <div className="card-body p-0">
-              <div className="table-responsive" style={{ maxHeight: 420 }}>
-                <table className="table table-sm mb-0">
-                  <thead className="table-light">
-                    <tr><th>Date</th><th>Customer</th><th>Particular</th><th>Gold Wt</th><th>Amount</th></tr>
-                  </thead>
-                  <tbody>
-                    {entries.length === 0 ? (
-                      <tr><td colSpan={5} className="text-center py-3 text-muted">No entries</td></tr>
-                    ) : entries.map(e => (
-                      <tr key={e._id}>
-                        <td>{new Date(e.entryDate).toLocaleDateString('en-IN')}</td>
-                        <td>{e.customerId?.customerName}</td>
-                        <td>{e.particular}</td>
-                        <td className={e.goldWeight < 0 ? 'text-danger' : 'text-success'}>
-                          {e.goldWeight ?? '—'}
-                        </td>
-                        <td>{e.amount ? `₹${Number(e.amount).toLocaleString('en-IN')}` : '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
+        
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
 
-const INIT = { customerName: '', customerCode: '', phoneNumber: '', companyName: '' };
+const INIT = {customer_ID:0, customer_Name: '', customer_Code: '', mobile_Number: '', company_Name: '',gold_OpeningBalance:'',amount_OpeningBalance:'',mode:'A' };
 
 const CustomerMaster = () => {
   const [customers, setCustomers] = useState([]);
@@ -12,18 +12,23 @@ const CustomerMaster = () => {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-
+const [showPassword, setShowPassword] = useState({});
   const load = async () => {
-    try { const { data } = await api.get('/customers'); setCustomers(data); } catch {}
+    try { const { data:cust } = await api.post('http://localhost:8081/api/customer/getcustomer',{customer_ID:0}); 
+    setCustomers(cust.data); } catch {}
+  
   };
 
   useEffect(() => { load(); }, []);
 
   const validate = () => {
     const e = {};
-    if (!form.customerName.trim()) e.customerName = 'Required';
-    if (!form.customerCode.trim()) e.customerCode = 'Required';
-    if (!/^[0-9]{10}$/.test(form.phoneNumber)) e.phoneNumber = 'Valid 10-digit mobile required';
+    if (!form.customer_Name.trim()) e.customer_Name = 'Required';
+    if (!form.customer_Code.trim()) e.customer_Code = 'Required';
+    if (!/^[0-9]{10}$/.test(form.mobile_Number)) e.mobile_Number = 'Valid 10-digit mobile required';
+    if (!form.company_Name.trim()) e.company_Name = 'Required';
+    if (!form.gold_OpeningBalance) e.gold_OpeningBalance = 'Required';
+    if (!form.amount_OpeningBalance) e.amount_OpeningBalance = 'Required';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -34,11 +39,28 @@ const CustomerMaster = () => {
     setLoading(true);
     try {
       if (editId) {
-        await api.put(`/customers/${editId}`, form);
-        toast.success('Customer updated');
+       const  {data}=  await api.post(`http://localhost:8081/api/customer/savecustomer`, form);
+        if(data.statusCode===1)
+      {   
+     toast.success('Customer updated');
+      }
+      else
+      {
+        toast.error(data?.message || 'Error updating customer');
+        return false;
+      }
+        
       } else {
-        await api.post('/customers', form);
-        toast.success('Customer created (login: mobile, password: last 6 digits)');
+     const  {data}=  await api.post('http://localhost:8081/api/customer/savecustomer', form);
+     if(data.statusCode===1)
+      {   
+     toast.success('Customer created (login: mobile, password: last 6 digits)');
+      }
+      else
+      {
+        toast.error(data?.message || 'Error saving customer');
+        return false;
+      }
       }
       setShowModal(false); setForm(INIT); setEditId(null);
       load();
@@ -48,20 +70,30 @@ const CustomerMaster = () => {
   };
 
   const handleEdit = (c) => {
-    setForm({ customerName: c.customerName, customerCode: c.customerCode, phoneNumber: c.phoneNumber, companyName: c.companyName || '' });
-    setEditId(c._id); setErrors({}); setShowModal(true);
+    setForm({customer_ID:c.customer_ID, customer_Name: c.customer_Name, customer_Code: c.customer_Code, mobile_Number: c.mobile_Number, company_Name: c.company_Name, gold_OpeningBalance: c.gold_OpeningBalance?.toString(), amount_OpeningBalance: c.amount_OpeningBalance?.toString(),mode:'M' || '' });
+    setEditId(c.customer_ID); setErrors({}); setShowModal(true);
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this customer?')) return;
-    try { await api.delete(`/customers/${id}`); toast.success('Deleted'); load(); }
+    try { const  {data}= await api.post(`http://localhost:8081/api/customer/savecustomer`,{customer_ID:id,mode:"D"}); 
+   if(data.statusCode===1)
+      {   
+     toast.success('Customer Deleted');
+      }
+      else
+      {
+        toast.error(data?.message || 'Error saving customer');
+        return false;
+      }
+      load(); }
     catch { toast.error('Delete failed'); }
   };
 
   const filtered = customers.filter(c =>
-    c.customerName.toLowerCase().includes(search.toLowerCase()) ||
-    c.customerCode.toLowerCase().includes(search.toLowerCase()) ||
-    c.phoneNumber.includes(search)
+    c.customer_Name.toLowerCase().includes(search.toLowerCase()) ||
+    c.customer_Code.toLowerCase().includes(search.toLowerCase()) ||
+    c.mobile_Number.includes(search)
   );
 
   return (
@@ -85,24 +117,54 @@ const CustomerMaster = () => {
             <table className="table table-hover mb-0">
               <thead className="table-light">
                 <tr>
-                  <th>#</th><th>Customer Name</th><th>Code</th><th>Phone</th><th>Company</th><th>Actions</th>
+                  <th>#</th><th>Customer Name</th><th>Code</th><th>Phone</th><th>Company</th><th>Password</th>
+          <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
                   <tr><td colSpan={6} className="text-center py-4 text-muted">No customers found</td></tr>
                 ) : filtered.map((c, i) => (
-                  <tr key={c._id}>
+                  <tr key={c.customer_ID}>
                     <td>{i + 1}</td>
-                    <td className="fw-semibold">{c.customerName}</td>
-                    <td><span className="badge bg-light text-dark">{c.customerCode}</span></td>
-                    <td>{c.phoneNumber}</td>
-                    <td>{c.companyName || '—'}</td>
+                    <td className="fw-semibold">{c.customer_Name}</td>
+                    <td><span className="badge bg-light text-dark">{c.customer_Code}</span></td>
+                    <td>{c.mobile_Number}</td>
+                    <td>{c.company_Name || '—'}</td>
+                    <td>
+    <div className="d-flex align-items-center gap-2">
+      <span>
+        {showPassword[c.customer_ID]
+          ? c.password
+          : '••••••••'}
+      </span>
+
+      <button
+        type="button"
+        className="btn btn-sm btn-link p-0"
+        onClick={() =>
+          setShowPassword(prev => ({
+            ...prev,
+            [c.customer_ID]: !prev[c.customer_ID]
+          }))
+        }
+      >
+        <i
+          className={`bi ${
+            showPassword[c.customer_ID]
+              ? 'bi-eye-slash'
+              : 'bi-eye'
+          }`}
+        ></i>
+      </button>
+    </div>
+  </td>
+
                     <td>
                       <button className="btn btn-sm btn-outline-primary me-1" onClick={() => handleEdit(c)}>
                         <i className="bi bi-pencil"></i>
                       </button>
-                      <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(c._id)}>
+                      <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(c.customer_ID)}>
                         <i className="bi bi-trash"></i>
                       </button>
                     </td>
@@ -124,12 +186,16 @@ const CustomerMaster = () => {
                 <button className="btn-close" onClick={() => setShowModal(false)} />
               </div>
               <form onSubmit={handleSubmit}>
+                <input type='hidden' value={form['customer_ID']} name='customer_ID'></input>
+                <input type='hidden' value={form['mode']} name='mode'></input>
                 <div className="modal-body">
                   {[
-                    { key: 'customerName', label: 'Customer Name *' },
-                    { key: 'customerCode', label: 'Customer Code *', disabled: !!editId },
-                    { key: 'phoneNumber', label: 'Phone Number *', type: 'tel', maxLength: 10, disabled: !!editId },
-                    { key: 'companyName', label: 'Company Name' }
+                    { key: 'customer_Name', label: 'Customer Name *' },
+                    { key: 'customer_Code', label: 'Customer Code *', disabled: !!editId },
+                    { key: 'mobile_Number', label: 'Mobile Number *', type: 'tel', maxLength: 10, disabled: !!editId },
+                    { key: 'company_Name', label: 'Company Name *' },
+                    { key: 'gold_OpeningBalance', label: 'Gold Opening Balance *',type:'number', step:'0.01' },
+                    { key: 'amount_OpeningBalance', label: 'Amount Opening Balance *',type:'number', step:'0.01' }
                   ].map(f => (
                     <div className="mb-3" key={f.key}>
                       <label className="form-label fw-semibold">{f.label}</label>
@@ -138,7 +204,22 @@ const CustomerMaster = () => {
                         maxLength={f.maxLength}
                         className={`form-control ${errors[f.key] ? 'is-invalid' : ''}`}
                         value={form[f.key]}
-                        onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                        onChange={e => {
+  const value = e.target.value;
+
+  if (
+    f.key === 'gold_OpeningBalance' ||
+    f.key === 'amount_OpeningBalance'
+  ) {
+    // Allow negative numbers with up to 3 decimal places
+    if (!/^-?\d*\.?\d{0,3}$/.test(value)) {
+      return;
+    }
+  }
+
+  setForm({ ...form, [f.key]: value });
+}}
+
                         disabled={f.disabled}
                       />
                       {errors[f.key] && <div className="invalid-feedback">{errors[f.key]}</div>}

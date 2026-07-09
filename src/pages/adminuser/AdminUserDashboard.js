@@ -6,10 +6,19 @@ const AdminUserDashboard = () => {
   const [counts, setCounts] = useState({});
 
   useEffect(() => {
-    api.get('/orders').then(({ data }) => {
-      const c = {};
-      data.forEach(o => { c[o.status] = (c[o.status] || 0) + 1; });
-      setCounts(c);
+    api.get('http://localhost:8081/api/adminDashboard/GetAdminDashboard').then(({ data }) => {
+    //  const c = {};
+     // data.forEach(o => { c[o.status] = (c[o.status] || 0) + 1; });
+      //setCounts(c);
+      const o = data;
+      setCounts({
+          pending:o[0].newOrderCount,
+          design_pending:o[0].pendingDesignCount,
+          design_uploaded:o[0].designUploadedCount,
+          customer_pending:o[0].pendingOrderConfirmedCount,
+          customer_confirmed:o[0].orderConfirmedCount,
+          under_processing:o[0].orderUnderProductionCount
+        });
     }).catch(() => {});
   }, []);
 
@@ -18,8 +27,8 @@ const AdminUserDashboard = () => {
     { status: 'design_pending', label: 'Design Pending', icon: '🎨', color: 'blue', to: '/adminuser/orders/design_pending', desc: 'Assigned, CAD awaited' },
     { status: 'design_uploaded', label: 'Confirm Design', icon: '✅', color: '', to: '/adminuser/orders/design_uploaded', desc: 'CAD uploaded, review' },
     { status: 'customer_pending', label: 'Cust. Confirmation', icon: '👤', color: 'teal', to: '/adminuser/orders/customer_pending', desc: 'Waiting for customer' },
-    { status: 'customer_confirmed', label: 'Assign Development', icon: '🔧', color: 'green', to: '/adminuser/orders/customer_confirmed', desc: 'Ready for production' },
-    { status: 'under_processing', label: 'Under Processing', icon: '⚙️', color: 'red', to: '/adminuser/orders/under_processing', desc: 'In production' },
+    { status: 'customer_confirmed', label: 'Order Confirmed', icon: '🔧', color: 'green', to: '/adminuser/orders/customer_confirmed', desc: 'Ready for production' },
+    { status: 'under_processing', label: 'Order Under Production', icon: '⚙️', color: 'red', to: '/adminuser/orders/under_processing', desc: 'In production' },
   ];
 
   return (
