@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback,useRef } from 'react';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext'
-const BASE_URL = 'http://localhost:8081';
+const BASE_URL = 'https://localhost:8081';
 
 const fmt = (dateStr) => {
   if (!dateStr) return '—';
@@ -20,6 +20,8 @@ const DesignerDashboard = () => {
   const [uploading, setUploading] = useState(false);
   const [imgViewer, setImgViewer] = useState(null);
   const [tab,       setTab]       = useState('pending'); // 'pending' | 'done'
+  const [cadPreview, setCadPreview] = useState(null);
+const fileInputRef = useRef(null);
 const { user } = useAuth();
   const load = useCallback(async () => {
     setLoading(true);
@@ -41,7 +43,7 @@ const { user } = useAuth();
     const { data } = await api.get(`${BASE_URL}/api/order/GetOrderView?orderID=${id}`);
     //const order = Array.isArray(data) ? data.find(o => o.order_ID === id) : data;
     setSelected(data[0]);
-    setCadFile(null);
+   clearCadFile();
   };
 
   const handleUpload = async () => {
@@ -57,7 +59,7 @@ const { user } = useAuth();
       if(data.statusCode===1)
       {        
       toast.success('CAD design uploaded successfully!');
-      setCadFile(null); setSelected(null); load();
+      clearCadFile(); setSelected(null); load();
       }
       else{
         toast.error(data?.message || 'Upload failed');
@@ -69,7 +71,44 @@ const { user } = useAuth();
       setUploading(false);
     }
   };
+const handleCadFile = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
+  const allowed = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif'
+  ];
+
+  if (!allowed.includes(file.type)) {
+    toast.error('Please select JPG, PNG or WEBP image');
+    return;
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    toast.error('Maximum file size is 10 MB');
+    return;
+  }
+
+  setCadFile(file);
+  setCadPreview(URL.createObjectURL(file));
+};
+
+const clearCadFile = () => {
+  setCadFile(null);
+
+  if (cadPreview) {
+    URL.revokeObjectURL(cadPreview);
+  }
+
+  setCadPreview(null);
+
+  if (fileInputRef.current) {
+    fileInputRef.current.value = '';
+  }
+};
   const displayOrders = (orders[tab] || []);
 
   return (
@@ -253,7 +292,8 @@ const { user } = useAuth();
                           />
                           <div style={{ fontSize: '0.7rem' }} className="text-muted">{l}</div>
                           <a
-                            href={imgUrl(selected[f])}
+                             href={`${BASE_URL}/api/Order/download?FileName=${selected[f]}&downloadFileName=${selected.order_Number.replace("/","_")+"_"+l}`}
+
                             download
                             className="d-block text-primary"
                             style={{ fontSize: '0.7rem' }}
@@ -287,39 +327,117 @@ const { user } = useAuth();
                 {/* Upload panel – only for pending */}
                 {tab === 'pending' && (
                   <div className="border rounded p-3 mt-2">
-                    <div className="fw-semibold mb-2">
-                      {selected.caD_Image_URL ? 'Replace CAD Design' : 'Upload CAD Design'}
-                    </div>
-                    <div className="mb-3">
-                      <input
-                        type="file"
-                        className="form-control"
-                        accept="image/*"
-                        onChange={e => setCadFile(e.target.files[0])}
-                      />
-                      <div className="text-muted small mt-1">Accepted: JPG, PNG, WEBP (max 10 MB)</div>
-                    </div>
-                    {cadFile && (
-                      <div className="mb-3">
-                        <img
-                          src={URL.createObjectURL(cadFile)}
-                          alt="Preview"
-                          className="rounded"
-                          style={{ maxHeight: 160, maxWidth: '100%' }}
-                        />
-                      </div>
-                    )}
-                    <button
-                      className="btn btn-primary"
-                      onClick={handleUpload}
-                      disabled={uploading || !cadFile}
-                    >
-                      {uploading
-                        ? <><span className="spinner-border spinner-border-sm me-2" />Uploading…</>
-                        : <><i className="bi bi-cloud-upload me-1"></i> Upload CAD</>
-                      }
-                    </button>
-                  </div>
+  <div className="fw-semibold mb-3">
+    {selected.caD_Image_URL ? 'Replace CAD Design' : 'Upload CAD Design'}
+  </div>
+
+  {!cadPreview ? (
+    <div
+      onClick={() => fileInputRef.current?.click()}
+      style={{
+        border: '2px dashed #ced4da',
+        borderRadius: 10,
+        padding: '24px',
+        textAlign: 'center',
+        cursor: 'pointer',
+        background: '#fafafa',
+        transition: 'all .2s'
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.borderColor = '#0d6efd';
+        e.currentTarget.style.background = '#f0f5ff';
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.borderColor = '#ced4da';
+        e.currentTarget.style.background = '#fafafa';
+      }}
+    >
+      <div style={{ fontSize: '2rem' }}>🖼️</div>
+
+      <div className="fw-semibold mt-2">
+        Click to upload CAD Image
+      </div>
+
+      <div className="small text-muted">
+        JPG, PNG, WEBP • Max 10 MB
+      </div>
+    </div>
+  ) : (
+    <div style={{ position: 'relative' }}>
+      <img
+        src={cadPreview}
+        alt="Preview"
+        style={{
+          width: '100%',
+          maxHeight: 220,
+          objectFit: 'contain',
+          borderRadius: 10,
+          border: '1px solid #dee2e6'
+        }}
+      />
+
+      <button
+        type="button"
+        className="btn btn-danger btn-sm"
+        onClick={clearCadFile}
+        style={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
+          borderRadius: '50%',
+          width: 28,
+          height: 28,
+          padding: 0
+        }}
+      >
+        ✕
+      </button>
+
+      <div className="mt-2">
+        <span
+          className="text-primary"
+          style={{
+            cursor: 'pointer',
+            textDecoration: 'underline'
+          }}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          Change Image
+        </span>
+
+        <span className="ms-2 text-muted small">
+          {cadFile?.name}
+        </span>
+      </div>
+    </div>
+  )}
+
+  <input
+    ref={fileInputRef}
+    type="file"
+    accept="image/jpeg,image/png,image/webp,image/gif"
+    style={{ display: 'none' }}
+    onChange={handleCadFile}
+  />
+
+  <button
+    className="btn btn-primary mt-3"
+    onClick={handleUpload}
+    disabled={uploading || !cadFile}
+  >
+    {uploading ? (
+      <>
+        <span className="spinner-border spinner-border-sm me-2" />
+        Uploading...
+      </>
+    ) : (
+      <>
+        <i className="bi bi-cloud-upload me-2"></i>
+        Upload CAD Design
+      </>
+    )}
+  </button>
+</div>
                 )}
 
               </div>

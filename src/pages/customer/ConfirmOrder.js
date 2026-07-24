@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
-const BASE_URL = 'http://localhost:8081';
+const BASE_URL = 'https://localhost:8081';
 const ConfirmOrder = () => {
   const [orders,  setOrders]  = useState([]);
   const [loading, setLoading] = useState(false);
@@ -195,26 +195,122 @@ const ConfirmOrder = () => {
                     </span>
                   )}
                 </div>
+<div className="row g-4">
 
-                {/* NEW: Customer specification & admin note */}
-                {(selected.specification || selected.adminSpecification) && (
-                  <div className="mb-3">
-                    {selected.specification && (
-                      <div className="alert alert-light border py-2 mb-2">
-                        <div className="small fw-semibold text-muted text-uppercase mb-1">Customer Specification</div>
-                        <div style={{ fontSize: '0.9rem' }}>{selected.specification}</div>
-                      </div>
-                    )}
-                    {selected.adminSpecification && (
-                      <div className="alert alert-warning py-2 mb-0">
-                        <div className="small fw-semibold text-uppercase mb-1">Admin Note</div>
-                        <div style={{ fontSize: '0.9rem' }}>{selected.adminSpecification}</div>
-                      </div>
-                    )}
+  {/* Left Side */}
+  <div className={selected.caD_Image_URL ? "col-lg-7" : "col-12"}>
+
+    {/* Customer Specification & Admin Note */}
+    {(selected.specification || selected.adminSpecification) && (
+      <div className="mb-3">
+        {selected.specification && (
+          <div className="alert alert-light border py-2 mb-2">
+            <div className="small fw-semibold text-muted text-uppercase mb-1">
+              Customer Specification
+            </div>
+            <div style={{ fontSize: "0.9rem" }}>
+              {selected.specification}
+            </div>
+          </div>
+        )}
+
+        {selected.adminSpecification && (
+          <div className="alert alert-warning py-2 mb-0">
+            <div className="small fw-semibold text-uppercase mb-1">
+              Admin Note
+            </div>
+            <div style={{ fontSize: "0.9rem" }}>
+              {selected.adminSpecification}
+            </div>
+          </div>
+        )}
+      </div>
+    )}
+
+    {/* Reference Images */}
+    {(selected.front_Image_URL ||
+      selected.top_Image_URL ||
+      selected.side_Image_URL ||
+      selected.back_Image_URL) && (
+      <div className="mb-3">
+        <div className="small fw-semibold text-muted text-uppercase mb-2">
+          Your Reference Images
+        </div>
+
+        <div className="d-flex flex-wrap gap-2">
+          {[
+            ["front_Image_URL", "Front"],
+            ["top_Image_URL", "Top"],
+            ["side_Image_URL", "Side"],
+            ["back_Image_URL", "Back"],
+          ].map(
+            ([f, l]) =>
+              selected[f] && (
+                <div key={f} className="text-center">
+                  <img
+                    src={imgUrl(selected[f])}
+                    alt={l}
+                    className="rounded"
+                    style={{
+                      width: 80,
+                      height: 80,
+                      objectFit: "cover",
+                      cursor: "zoom-in",
+                      border: "1px solid #dee2e6",
+                    }}
+                    onClick={() =>
+                      setImgViewer(imgUrl(selected[f]))
+                    }
+                  />
+                  <div
+                    className="text-muted"
+                    style={{ fontSize: "0.7rem" }}
+                  >
+                    {l}
                   </div>
-                )}
+                </div>
+              )
+          )}
+        </div>
+      </div>
+    )}
 
-                {/* NEW: Designer estimates */}
+  </div>
+
+  {/* Right Side - CAD */}
+  <div className={selected.caD_Image_URL ? "col-lg-5" : "col-12"}>
+    <div className="small fw-semibold text-muted text-uppercase mb-2">
+      CAD Design by Designer
+    </div>
+
+    {selected.caD_Image_URL ? (
+      <div className="text-center">
+        <img
+          src={imgUrl(selected.caD_Image_URL)}
+          alt="CAD Design"
+          className="img-fluid rounded shadow-sm"
+          style={{
+            maxHeight: 320,
+            border: "2px solid #7c3aed",
+            cursor: "zoom-in",
+          }}
+          onClick={() =>
+            setImgViewer(imgUrl(selected.caD_Image_URL))
+          }
+        />
+        <div className="text-muted small mt-1">
+          Click image to enlarge
+        </div>
+      </div>
+    ) : (
+      <div className="text-muted">
+        No CAD image uploaded yet
+      </div>
+    )}
+  </div>
+
+</div>
+{/* NEW: Designer estimates */}
                 {(selected.designer_Weight || selected.designer_Diamond_Weight || selected.designer_NoOf_Diamonds) && (
                   <div className="mb-3 p-3 rounded border" style={{ background: '#fff8f0' }}>
                     <div className="small fw-semibold text-muted text-uppercase mb-2">Designer Estimates</div>
@@ -232,50 +328,7 @@ const ConfirmOrder = () => {
                     </div>
                   </div>
                 )}
-
-                {/* Reference images — fixed property keys */}
-                {(selected.front_Image_URL || selected.top_Image_URL || selected.side_Image_URL || selected.back_Image_URL) && (
-                  <div className="mb-3">
-                    <div className="small fw-semibold text-muted text-uppercase mb-2">Your Reference Images</div>
-                    <div className="d-flex gap-2 flex-wrap">
-                      {[
-                        ['front_Image_URL', 'Front'],   // was: frontImage
-                        ['top_Image_URL',   'Top'],     // was: topImage
-                        ['side_Image_URL',  'Side'],    // was: sideImage
-                        ['back_Image_URL',  'Back'],    // was: backImage
-                      ].map(([f, l]) =>
-                        selected[f] && (
-                          <div key={f} className="text-center">
-                            <img
-                              src={imgUrl(selected[f])} alt={l}
-                              className="img-thumb rounded"
-                              style={{ height: 72, width: 72, objectFit: 'cover', cursor: 'zoom-in', border: '1px solid #dee2e6' }}
-                              onClick={() => setImgViewer(imgUrl(selected[f]))}
-                            />
-                            <div style={{ fontSize: '0.7rem' }} className="text-muted">{l}</div>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* CAD design — fixed property key */}
-                <div className="mb-4">
-                  <div className="small fw-semibold text-muted text-uppercase mb-2">CAD Design by Designer</div>
-                  {selected.caD_Image_URL                               /* was: selected.cadImage */
-                    ? (
-                      <div>
-                        <img src={imgUrl(selected.caD_Image_URL)} alt="CAD design"
-                          className="rounded shadow-sm"
-                          style={{ maxHeight: 280, maxWidth: '100%', cursor: 'zoom-in', border: '2px solid #7c3aed' }}
-                          onClick={() => setImgViewer(imgUrl(selected.caD_Image_URL))} />
-                        <div className="text-muted small mt-1">Click image to enlarge</div>
-                      </div>
-                    )
-                    : <div className="text-muted">No CAD image uploaded yet</div>
-                  }
-                </div>
+               
 
                 {/* Decision — unchanged */}
                 <div className="border rounded p-3">

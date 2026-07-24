@@ -40,10 +40,10 @@ const [designs, setDesigns] = useState([]);
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.post('http://localhost:8081/api/order/GetGridOrder', { customer_ID: user.entity_ID });
+      const { data } = await api.post('https://localhost:8081/api/order/GetGridOrder', { customer_ID: user.entity_ID });
       setOrders(data);
       setCurrentPage(1); // reset to first page on fresh load
-      const { data:order } = await api.get('http://localhost:8081/api/order/GetListCustomerOrder',{employee_ID:0}); 
+      const { data:order } = await api.get('https://localhost:8081/api/order/GetListCustomerOrder',{employee_ID:0}); 
     setDesigns(order.design); 
     } catch { toast.error('Failed to load orders'); }
     finally { setLoading(false); }
@@ -89,7 +89,7 @@ const [designs, setDesigns] = useState([]);
   const handleCancel = async () => {
     if (!cancelReason.trim()) { toast.error('Cancel reason is required'); return; }
     try {
-      const { data:order } = await api.post(`http://localhost:8081/api/order/cancelOrder`, { order_ID:cancelId,user_ID:user.entity_ID, cancel_Reason:cancelReason });
+      const { data:order } = await api.post(`https://localhost:8081/api/order/cancelOrder`, { order_ID:cancelId,user_ID:user.entity_ID, cancel_Reason:cancelReason });
       if(order.statusCode===1)
       {
       toast.success('Order cancelled');
@@ -105,7 +105,7 @@ const [designs, setDesigns] = useState([]);
     }
   };
 
-  const imgUrl = fn => fn ? `http://localhost:8081/uploads/${fn}` : null;
+  const imgUrl = fn => fn ? `https://localhost:8081/uploads/${fn}` : null;
 
   const YN = v => v
     ? <span className="badge bg-success">Yes</span>
@@ -171,7 +171,6 @@ const [designs, setDesigns] = useState([]);
                 <table className="table table-hover align-middle mb-0">
                   <thead className="table-light">
                     <tr>
-                      <th>Order #</th>
                       <th>Order Number</th>
                       <th>Date</th>
                       <th>Design</th>
@@ -193,7 +192,6 @@ const [designs, setDesigns] = useState([]);
                         const canEdit = o.is_Assigned_Designer === 'No';
                         return (
                           <tr key={o._id}>
-                            <td><strong>{o.order_ID}</strong></td>
                             <td>{o.order_Number}</td>
                             <td style={{ whiteSpace: 'nowrap' }}>{new Date(o.order_Date).toLocaleDateString('en-IN')}</td>
                             <td>{o.design || '—'}</td>

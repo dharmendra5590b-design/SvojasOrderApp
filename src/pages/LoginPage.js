@@ -33,7 +33,21 @@ const LoginPage = () => {
       toast.success('Login successful!');
       if (user.isFirstLogin) { navigate('/change-password'); return; }
       const routes = { ADMIN: '/admin/dashboard', ADMINUSER: '/adminuser/dashboard', CUSTOMER: '/customer/orders', DESIGNER: '/designer/orders', OPERATOR: '/admin/ledger' };
+      if(user.data.is_Order_Available_For_Confirm===true && user.data.user_Type==="CUSTOMER")
+      {
+        if(user.data.is_Order_Available_For_Confirm===true)
+        {
+          navigate('/customer/confirm-order');
+        }
+        else
+        {
+          navigate('/customer/orders');
+        }
+      }
+      else
+      {
       navigate(routes[user.data.user_Type] || '/');
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed');
     } finally {

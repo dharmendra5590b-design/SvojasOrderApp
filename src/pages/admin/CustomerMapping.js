@@ -14,8 +14,8 @@ const CustomerMapping = () => {
   const loadMasters = useCallback(async () => {
     try {
       const [cRes, eRes] = await Promise.all([
-        api.get('http://localhost:8081/api/customer/getcustomermapping'),
-       api.post('http://localhost:8081/api/customer/getemployee',{employee_ID:0,mode:'O'}),
+        api.get('https://localhost:8081/api/customer/getcustomermapping'),
+       api.post('https://localhost:8081/api/customer/getemployee',{employee_ID:0,mode:'O'}),
       ]);
       setCustomers(cRes.data);
       setEmployees(eRes.data.data);
@@ -58,7 +58,7 @@ async function SetCustomer(customerID) {
    setEmployees(tmpemployees);
    return false;
    }
-  const {data:MapEmp}=await api.post('http://localhost:8081/api/customer/GetCustomerMappingDtl',{customer_ID:customerID})
+  const {data:MapEmp}=await api.post('https://localhost:8081/api/customer/GetCustomerMappingDtl',{customer_ID:customerID})
  if(MapEmp.statusCode===1)
  {
    
@@ -95,7 +95,7 @@ async function SetCustomer(customerID) {
     if (!selectedCustomer) { toast.error('Please select a customer first'); return; }
     setSaving(true);
     try {
-     const { data } = await api.post(`http://localhost:8081/api/customer/SaveCustomerMapping`, { customer_ID:selectedCustomer, employee_List: checkedIds?.join("|"),mode:"A" });
+     const { data } = await api.post(`https://localhost:8081/api/customer/SaveCustomerMapping`, { customer_ID:selectedCustomer, employee_List: checkedIds?.join("|"),mode:"A" });
      
      
           if(data.statusCode===1)
@@ -122,7 +122,7 @@ async function SetCustomer(customerID) {
     if (!window.confirm('Remove all operator assignments for this customer?')) return;
     setSaving(true);
     try {
-     const { data } = await api.post(`http://localhost:8081/api/customer/SaveCustomerMapping`, { customer_ID:selectedCustomer,mode:"D" });
+     const { data } = await api.post(`https://localhost:8081/api/customer/SaveCustomerMapping`, { customer_ID:selectedCustomer,mode:"D" });
      
      
           if(data.statusCode===1)

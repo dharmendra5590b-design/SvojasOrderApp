@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
-const BASE_URL = 'http://localhost:8081';
+const BASE_URL = 'https://localhost:8081';
 const imgUrl = (fn) => fn ? `${BASE_URL}/${fn}` : null;
 
 const fmt = (dateStr) => {
@@ -12,6 +12,23 @@ const fmt = (dateStr) => {
   return isNaN(d) ? dateStr : d.toLocaleDateString('en-IN');
 };
 
+const integerFields = [
+  'final_Noof_Diamonds',
+  'noOfColour_Stone',
+  'other_NoofColour_Stone',
+];
+const decimalFields = [
+  'final_Gross_Weight',
+  'final_Diamond_Weight',
+  'colourStone_Weight',
+  'other_ColourStone_Weight',
+  'final_Net_Weight',
+  'gold24ktWeight',
+  'labour_Charge',
+  'gold_Loss',
+  'gold_Loss_24kt',
+  'billAmount'
+];
 /* ── Sub-components ── */
 const InfoRow = ({ label, value }) => (
   <div className="col-md-6 mb-2">
@@ -23,8 +40,8 @@ const InfoRow = ({ label, value }) => (
 const SectionLabel = ({ children }) => (
   <div style={{
     fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em',
-    color: '#6c757d', fontWeight: 600, marginBottom: 10, paddingBottom: 6,
-    borderBottom: '1px solid #e9ecef',
+    color: '#6c757d', fontWeight: 'bold', marginBottom: 10, paddingBottom: 6,
+    borderBottom: '1px solid #e9ecef',marginTop:10
   }}>
     {children}
   </div>
@@ -63,7 +80,10 @@ const OrderViewModal = ({ orderId, onClose, onOrderUpdated }) => {
   const [operators, setOperators]               = useState([]);
   const [operatorSearch, setOperatorSearch]     = useState('');
   const [operatorDropOpen, setOperatorDropOpen] = useState(false);
-  const [actionForm, setActionForm]             = useState({});
+  const [actionForm, setActionForm]             = useState({
+
+    
+  });
   const [actionLoading, setActionLoading]       = useState(false);
   const [cancelModal, setCancelModal]           = useState(false);
   const [cancelReason, setCancelReason]         = useState('');
@@ -76,6 +96,21 @@ const OrderViewModal = ({ orderId, onClose, onOrderUpdated }) => {
   const operatorDropRef = useRef(null);
 
   const { user } = useAuth();
+const defaultActionForm = {
+  final_Gross_Weight: 0,
+  final_Noof_Diamonds: 0,
+  final_Diamond_Weight: 0,
+  noOfColour_Stone: 0,
+  colourStone_Weight: 0,
+  other_NoofColour_Stone: 0,
+  other_ColourStone_Weight: 0,
+  final_Net_Weight: 0,
+  labour_Charge: 0,
+  gold_Loss: 0,
+  gold_Loss_24kt: 0,
+  billAmount: 0,
+  gold24ktWeight: 0,
+};
 
   /* ── fetch order ── */
   const fetchOrder = useCallback(() => {
@@ -88,7 +123,9 @@ const OrderViewModal = ({ orderId, onClose, onOrderUpdated }) => {
       .finally(() => setLoading(false));
   }, [orderId]);
 
-  useEffect(() => { fetchOrder(); setActionForm({}); }, [fetchOrder]);
+  useEffect(() => { fetchOrder(); 
+    setActionForm(defaultActionForm);
+  }, [fetchOrder]);
 
   /* ── fetch designers ── */
   useEffect(() => {
@@ -242,8 +279,25 @@ const OrderViewModal = ({ orderId, onClose, onOrderUpdated }) => {
   };
 
   const completeOrder = async () => {
-    if (!actionForm.final_Gross_Weight) { toast.error('Final Gross Weight is required'); return; }
-    if (!actionForm.billAmount)         { toast.error('Bill Amount is required'); return; }
+    const requiredFields = [
+    { key: 'final_Gross_Weight', label: 'Final Gross Weight' },
+    { key: 'final_Net_Weight', label: 'Final Net Weight' },
+    { key: 'labour_Charge', label: 'Labour Charge' },
+    { key: 'gold_Loss', label: 'Gold Loss' },
+    { key: 'gold_Loss_24kt', label: '24kt Gold Loss' },
+    { key: 'billAmount', label: 'Bill Amount' },
+    { key: 'gold24ktWeight', label: '24kt Gold Weight' },
+  ];
+
+  for (const field of requiredFields) {
+    const value = actionForm[field.key];
+
+    if (value === '' || value === null || value === undefined) {
+      toast.error(`${field.label} is required`);
+      return;
+    }
+  }
+
     setActionLoading(true);
     try {
       actionForm["order_ID"]=orderId;
@@ -355,13 +409,13 @@ const OrderViewModal = ({ orderId, onClose, onOrderUpdated }) => {
             <div className="row g-2 mb-3">
               <div className="col-md-4">
                 <label className="form-label small fw-semibold">Designer Weight</label>
-                <input type="number" step="0.01" className="form-control form-control-sm"
+                <input type="text" step="0.01" className="form-control form-control-sm"
                   value={actionForm.designer_Weight || ''}
                   onChange={e => setActionForm({ ...actionForm, designer_Weight: e.target.value })} />
               </div>
               <div className="col-md-4">
                 <label className="form-label small fw-semibold">Diamond Weight</label>
-                <input type="number" step="0.001" className="form-control form-control-sm"
+                <input type="text" step="0.001" className="form-control form-control-sm"
                   value={actionForm.designer_Diamond_Weight || ''}
                   onChange={e => setActionForm({ ...actionForm, designer_Diamond_Weight: e.target.value })} />
               </div>
@@ -548,7 +602,7 @@ const OrderViewModal = ({ orderId, onClose, onOrderUpdated }) => {
     }
 
     /* Step 5 — Assigned to Production */
-    if (order.order_Status === 'Assigned To Production') {
+    if (order.order_Status === 'Assigned To Production' && user.user_Type==="ADMIN") {
       return (
         <div className="card border-0 bg-light mt-2">
           <div className="card-body">
@@ -563,16 +617,53 @@ const OrderViewModal = ({ orderId, onClose, onOrderUpdated }) => {
                 { key: 'other_NoofColour_Stone',  label: 'Other No. of Colour Stone', step:'1' },
                 { key: 'other_ColourStone_Weight', label: 'Other Colour Stone Weight' , step:'0.001'},
                 { key: 'final_Net_Weight',     label: 'Final Net Weight' , step:'0.001'},
-                
+                 { key: 'labour_Charge',     label: 'Labour Charge *' , step:'0.001'},
+                  { key: 'gold_Loss',     label: 'Gold Loss *' , step:'0.001'},
+                   { key: 'gold_Loss_24kt',     label: '24kt Gold Loss *' , step:'0.001'},
+                   { type: 'divider', title: 'Ledger Entry' },
+
                 { key: 'billAmount',           label: 'Bill Amount *' , step:'0.001'},
                 { key: 'gold24ktWeight',       label: '24kt Gold Weight' , step:'0.001'},
               ].map(f => (
+                <>
+               {f.type === 'divider'? <div className="col-12">
+                <div className="d-flex align-items-center my-2">
+                          <span className="fw-semibold me-2">{f.title}</span>
+                          <hr className="flex-grow-1 m-0" />
+                        </div>
+              </div>:
+                
                 <div className="col-md-4" key={f.key}>
                   <label className="form-label small fw-semibold">{f.label}</label>
-                  <input type="number" step={f.step} className="form-control form-control-sm"
-                    value={actionForm[f.key] || ''}
-                    onChange={e => setActionForm({ ...actionForm, [f.key]: e.target.value })} />
-                </div>
+                  <input
+  type="text"
+  inputMode={integerFields.includes(f.key) ? "numeric" : "decimal"}
+  className="form-control form-control-sm"
+  value={actionForm[f.key]}
+  onChange={(e) => {
+    let value = e.target.value;
+
+    if (decimalFields.includes(f.key)) {
+      // Allow up to 3 decimal places
+      if (/^\d*\.?\d{0,3}$/.test(value) || value === '') {
+        setActionForm(prev => ({
+          ...prev,
+          [f.key]: value
+        }));
+      }
+    } else {
+      // Integer only
+      if (/^\d*$/.test(value)) {
+        setActionForm(prev => ({
+          ...prev,
+          [f.key]: value
+        }));
+      }
+    }
+  }}
+/>
+                </div>}
+                </>
               ))}
             </div>
             <button className="btn btn-sm btn-success" onClick={completeOrder} disabled={actionLoading}>
@@ -718,44 +809,7 @@ const OrderViewModal = ({ orderId, onClose, onOrderUpdated }) => {
                   </div>
                 </div>
               )}
-
-              {/* Designer Details */}
-              {(order.designer_Weight || order.designer_Diamond_Weight || order.designer_NoOf_Diamonds) && (
-                <div className="mb-4">
-                  <SectionLabel>Designer Details</SectionLabel>
-                  <div className="row g-0">
-                    <InfoRow label="Designer Weight"          value={order.designer_Weight} />
-                    <InfoRow label="Designer Diamond Weight"  value={order.designer_Diamond_Weight} />
-                    <InfoRow label="Designer No. of Diamonds" value={order.designer_NoOf_Diamonds} />
-                  </div>
-                </div>
-              )}
-
-              {/* Completion Details */}
-              {(order.final_Gross_Weight || order.final_Net_Weight || order.order_Complete_DT) && (
-                <div className="mb-4">
-                  <SectionLabel>Completion Details</SectionLabel>
-                  <div className="row g-0">
-                    <InfoRow label="Final Gross Weight"    value={order.final_Gross_Weight} />
-                    <InfoRow label="Final Net Weight"      value={order.final_Net_Weight} />
-                    <InfoRow label="Final Diamond Weight"  value={order.final_Diamond_Weight} />
-                    <InfoRow label="Final No. of Diamonds" value={order.final_Noof_Diamonds} />
-                    <InfoRow label="Completed On"          value={fmt(order.order_Complete_DT)} />
-                  </div>
-                </div>
-              )}
-
-              {/* CAD Image */}
-              {order.caD_Image_URL && (
-                <div className="mb-4">
-                  <SectionLabel>CAD Design</SectionLabel>
-                  <img src={imgUrl(order.caD_Image_URL)} alt="CAD Design" className="rounded"
-                    style={{ maxHeight: 200, cursor: 'zoom-in', objectFit: 'contain', border: '1px solid #e9ecef' }}
-                    onClick={() => setImgViewer(imgUrl(order.caD_Image_URL))} />
-                </div>
-              )}
-
-              {/* Customer Images */}
+ {/* Customer Images */}
               {imageFields.some(f => order[f.key]) && (
                 <div className="mb-4">
                   <SectionLabel>Customer Images</SectionLabel>
@@ -781,6 +835,56 @@ const OrderViewModal = ({ orderId, onClose, onOrderUpdated }) => {
                   </div>
                 </div>
               )}
+              <div className='row'>
+              {/* Designer Details */}
+              {(order.designer_Weight || order.designer_Diamond_Weight || order.designer_NoOf_Diamonds) && (
+                <div className="col-6">
+                  <SectionLabel>Designer Details</SectionLabel>
+                  <div className="row g-0">
+                    <InfoRow label="Designer Weight"          value={order.designer_Weight} />
+                    <InfoRow label="Designer Diamond Weight"  value={order.designer_Diamond_Weight} />
+                    <InfoRow label="Designer No. of Diamonds" value={order.designer_NoOf_Diamonds} />
+                  </div>
+                </div>
+              )}
+              {/* CAD Image */}
+              {order.caD_Image_URL && (
+                <div className="col-4">
+                  <SectionLabel>CAD Design</SectionLabel>
+                  <img src={imgUrl(order.caD_Image_URL)} alt="CAD Design" className="rounded"
+                    style={{ maxHeight: 200, cursor: 'zoom-in', objectFit: 'contain', border: '1px solid #e9ecef' }}
+                    onClick={() => setImgViewer(imgUrl(order.caD_Image_URL))} />
+                </div>
+              )}
+</div>
+              {/* Completion Details */}
+              {(order.final_Gross_Weight || order.final_Net_Weight || order.order_Complete_DT) && (
+                <div className="mb-4">
+                  <SectionLabel>Completion Details</SectionLabel>
+                  <div className="row g-0">
+  <InfoRow label="Final Net Weight"            value={order.final_Net_Weight} />
+  <InfoRow label="Final Diamond Weight"        value={order.final_Diamond_Weight} />
+  <InfoRow label="Final No. of Diamonds"       value={order.final_Noof_Diamonds} />
+
+  <InfoRow label="No. of Colour Stones"        value={order.noOfColour_Stone} />
+  <InfoRow label="Colour Stone Weight"         value={order.colourStone_Weight} />
+ {/* <InfoRow label="Other Colour Stones"         value={order.others_NoOfColour_Stone} />
+  <InfoRow label="Other Colour Stone Weight"   value={order.others_Colour_Stone_Weight} />
+
+  <InfoRow label="Gold Loss"                   value={order.gold_Loss} />
+  <InfoRow label="Labour Charge"               value={order.labour_Charge} />
+  <InfoRow label="Gold Loss (24Kt)"            value={order.gold_Loss_24kt} />
+  <InfoRow label="Final Gold Weight (24Kt)"    value={order.final_Gold_Weight_24kt} />
+  <InfoRow label="Bill Amount"                 value={order.bill_Amount} />*/}
+
+                    <InfoRow label="Completed On"          value={fmt(order.order_Complete_DT)} />
+                  </div>
+                </div>
+              )}
+
+              
+
+             
 
               {/* Action Panel */}
               {renderActionPanel()}

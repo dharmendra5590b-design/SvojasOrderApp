@@ -30,7 +30,7 @@ const NewOrder = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const BASE_URL = 'http://localhost:8081';
+  const BASE_URL = 'https://localhost:8081';
 
   const searchParams = new URLSearchParams(location.search);
 
@@ -124,6 +124,21 @@ const NewOrder = () => {
         // repeat modes always create a new order
         orderType: forRepeat ? 'new' : 'edit',
         mode:      forRepeat ? 'A'   : 'E',
+        final_Gross_Weight:      o.final_Gross_Weight ?? '',
+  final_Noof_Diamonds:     o.final_Noof_Diamonds ?? '',
+  final_Diamond_Weight:    o.final_Diamond_Weight ?? '',
+  noOfColour_Stone:        o.noOfColour_Stone ?? '',
+  colourStone_Weight:      o.colourStone_Weight ?? '',
+  others_NoOfColour_Stone: o.others_NoOfColour_Stone ?? '',
+  others_Colour_Stone_Weight: o.others_Colour_Stone_Weight ?? '',
+  final_Net_Weight:        o.final_Net_Weight ?? '',
+
+  gold_Loss:               o.gold_Loss ?? '',
+  labour_Charge:           o.labour_Charge ?? '',
+  gold_Loss_24kt:          o.gold_Loss_24kt ?? '',
+  bill_Amount:             o.bill_Amount ?? '',
+  final_Gold_Weight_24kt:  o.final_Gold_Weight_24kt ?? '',
+order_Complete_DT:o.order_Complete_DT
       });
 
       setExistingImages({
@@ -140,11 +155,19 @@ const NewOrder = () => {
   useEffect(() => { load(); }, []);
 
   useEffect(() => {
-    if (!sourceOrderId) return;
-    // forRepeat = true skips IS_Editable and sets mode:'A' (new order)
-    loadOrderForEdit(sourceOrderId, isRepeatMode);
-  }, [sourceOrderId, isRepeatMode]);
-
+  if (!sourceOrderId) {
+    // No order to load (plain "New Order" navigation) — clear any
+    // stale data left over from a previous edit/repeat view.
+    setForm(INIT);
+    setImages({ frontImage: null, topImage: null, sideImage: null, backImage: null });
+    setExistingImages({ frontImage: '', topImage: '', sideImage: '', backImage: '' });
+    setErrors({});
+    setIsEditable(true);
+    return;
+  }
+  // forRepeat = true skips IS_Editable and sets mode:'A' (new order)
+  loadOrderForEdit(sourceOrderId, isRepeatMode);
+}, [sourceOrderId, isRepeatMode]);
   const validate = () => {
     const e = {};
     if (!form.design_ID)      e.design_ID      = 'Design type is required';
@@ -226,7 +249,21 @@ const NewOrder = () => {
       setLoading(false);
     }
   };
-
+const InfoRow = ({ label, value }) => (
+  <div className="col-md-3 mb-2">
+    <small className="d-block" style={{ fontSize: '0.875em', letterSpacing: '0.04em', textTransform: 'uppercase',fontWeight:600 }}>{label}</small>
+    <div className="fw-semibold text-dark" style={{ fontSize: '0.875em' }}>{value ?? '—'}</div>
+  </div>
+);
+const SectionLabel = ({ children }) => (
+  <div style={{
+    fontSize: '0.875em', textTransform: 'uppercase', letterSpacing: '0.1em',
+    color: '#6c757d', fontWeight: 600, marginBottom: 10, paddingBottom: 6,
+    borderBottom: '1px solid #e9ecef',fontWeight:600
+  }}>
+    {children}
+  </div>
+);
   const ImageUpload = ({ field, label }) => {
     const preview = images[field]
       ? URL.createObjectURL(images[field])
@@ -518,7 +555,36 @@ const NewOrder = () => {
               </div>
             </div>
           </div>
+{/* Completion Details */}
+              {(form.order_Complete_DT) && (
+                 <div className="col-12">
+            <div className="card">
+              <div className="card-header">Completion Details</div>
+              <div className="card-body">
+                <div className="row g-3">
+  <InfoRow label="Final Gross Weight"          value={form.final_Gross_Weight} />
+  <InfoRow label="No. of Diamonds"       value={form.final_Noof_Diamonds} />
+  <InfoRow label="Final Diamond Weight"        value={form.final_Diamond_Weight} />
+  
 
+  <InfoRow label="No. of Colour Stones"        value={form.noOfColour_Stone} />
+  <InfoRow label="Colour Stone Weight"         value={form.colourStone_Weight} />
+  <InfoRow label="Other Colour Stones"         value={form.others_NoOfColour_Stone} />
+  <InfoRow label="Other Colour Stone Weight"   value={form.others_Colour_Stone_Weight} />
+
+
+  <InfoRow label="Final Net Weight"            value={form.final_Net_Weight} />
+  <InfoRow label="Labour Charge"               value={form.labour_Charge} />
+  <InfoRow label="Gold Loss"                   value={form.gold_Loss} />
+  
+  <InfoRow label="Gold Loss (24Kt)"            value={form.gold_Loss_24kt} />  
+  <InfoRow label="Bill Amount"                 value={form.bill_Amount} />
+  <InfoRow label="Final Gold Weight (24Kt)"    value={form.final_Gold_Weight_24kt} />
+</div>
+                </div>
+                </div>
+                </div>
+              )}
           {/* Action Buttons */}
           <div className="col-12">
             {/* Show submit button unless it's a non-editable normal edit */}

@@ -20,7 +20,7 @@ const AdminDashboard = () => {
   const [counts, setCounts] = useState({});
 
   useEffect(() => {
-    api.get('http://localhost:8081/api/adminDashboard/GetAdminDashboard').then(({ data }) => {
+    api.get('https://localhost:8081/api/adminDashboard/GetAdminDashboard').then(({ data }) => {
     //  const c = {};
      // data.forEach(o => { c[o.status] = (c[o.status] || 0) + 1; });
       //setCounts(c);
