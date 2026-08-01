@@ -174,10 +174,10 @@ const [designs, setDesigns] = useState([]);
                       <th>Order Number</th>
                       <th>Date</th>
                       <th>Design</th>
-                      <th>Delivery Date</th>
-                      <th>Designer&nbsp;Assigned</th>
-                      <th>Design&nbsp;Confirmed</th>
-                      <th>You&nbsp;Approved</th>
+                      <th>Expected Delivery Date</th>
+                      <th>Assigned</th>
+                      <th>Confirmed</th>
+                      <th>Approved</th>
                       <th>Sent to Prod.</th>
                       <th>Completed</th>
                       <th>Status</th>
@@ -367,7 +367,7 @@ const [designs, setDesigns] = useState([]);
                     ['Gold Colour',    selected.goldColour || '—'],
                     ['Size',           selected.size   || '—'],
                     ['Gold Weight',    selected.goldWeight ?? '—'],
-                    ['Delivery Date',  selected.deliveryDate ? new Date(selected.deliveryDate).toLocaleDateString('en-IN') : '—'],
+                    ['Expected Delivery Date',  selected.deliveryDate ? new Date(selected.deliveryDate).toLocaleDateString('en-IN') : '—'],
                     ['Stone',          selected.stone  || '—'],
                     ['Colour Stone',   selected.colourStoneRequired ? (selected.colourStone || 'Yes') : 'No'],
                     ['Certificate',    selected.certificateRequired ? (selected.certificateType || 'Yes') : 'No'],

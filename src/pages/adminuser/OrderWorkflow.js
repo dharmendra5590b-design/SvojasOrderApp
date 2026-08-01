@@ -67,7 +67,7 @@ const OrderWorkflow = () => {
                 <th>Date</th>
                 <th>Design</th>
                 <th>Quantity</th>
-                <th>Delivery Date</th>
+                <th>Expected Delivery Date</th>
                 <th></th>
               </tr>
             </thead>
@@ -111,7 +111,7 @@ const OrderWorkflow = () => {
         <th>Designer</th>
         <th>Assigned Date</th>
         <th>Expected Date</th>
-        <th>Delivery Date</th>
+        <th>Expected Delivery Date</th>
         <th>Priority</th>
         <th></th>
       </tr>
@@ -173,7 +173,7 @@ case 'design_uploaded':
         <th>Assigned Date</th>
         <th>Expected Date</th>
         <th>Design Upload Date</th>
-        <th>Delivery Date</th>
+        <th>Expected Delivery Date</th>
         <th>Priority</th>
         <th></th>
       </tr>
@@ -239,7 +239,7 @@ case 'design_uploaded':
         <th>Assigned Date</th>
         <th>Design Upload Date</th>
         <th>Design Approved Date</th>
-        <th>Delivery Date</th>
+        <th>Expected Delivery Date</th>
         <th>Priority</th>
         <th></th>
       </tr>

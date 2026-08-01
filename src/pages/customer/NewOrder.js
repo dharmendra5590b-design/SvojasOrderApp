@@ -26,12 +26,13 @@ const NewOrder = () => {
   const [clrstones, setClrStones] = useState([]);
   const [certTypes, setCertTypes] = useState([]);
   const [quality, setQuality] = useState([]);
-
+const [imgViewer,  setImgViewer]  = useState(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const BASE_URL = 'https://localhost:8081';
-
+// Image URL built from BASE_URL + relative path returned by API
+  const imgUrl = url => url ? `${BASE_URL}/${url}` : null;
   const searchParams = new URLSearchParams(location.search);
 
   // --- mode detection ---
@@ -138,7 +139,8 @@ const NewOrder = () => {
   gold_Loss_24kt:          o.gold_Loss_24kt ?? '',
   bill_Amount:             o.bill_Amount ?? '',
   final_Gold_Weight_24kt:  o.final_Gold_Weight_24kt ?? '',
-order_Complete_DT:o.order_Complete_DT
+order_Complete_DT:o.order_Complete_DT,
+caD_Image_URL:o.caD_Image_URL
       });
 
       setExistingImages({
@@ -285,7 +287,7 @@ const SectionLabel = ({ children }) => (
         />
         {preview && (
           <img src={preview} alt={label} className="mt-1 rounded"
-            style={{ width: 60, height: 60, objectFit: 'cover' }} />
+            style={{ width: 60, height: 60, objectFit: 'cover',cursor: "zoom-in" }}  onClick={() => setImgViewer(preview)} />
         )}
       </div>
     );
@@ -522,7 +524,7 @@ const SectionLabel = ({ children }) => (
                 )}
 
                 <div>
-                  <label className="form-label fw-semibold">Delivery Date *</label>
+                  <label className="form-label fw-semibold">Expected Delivery Date *</label>
                   <input type="date" className={`form-control ${errors.delivery_Date ? 'is-invalid' : ''}`}
                     min={new Date().toISOString().split('T')[0]}
                     value={form.delivery_Date} onChange={e => set('delivery_Date', e.target.value)}
@@ -555,6 +557,29 @@ const SectionLabel = ({ children }) => (
               </div>
             </div>
           </div>
+         {form.caD_Image_URL && (
+  <div className="card">
+    <div className="card-header">CAD Image</div>
+
+    <div className="card-body text-center">
+      <img
+        src={imgUrl(form.caD_Image_URL)}
+        alt="CAD Design"
+        className="img-fluid rounded shadow-sm"
+        style={{
+          maxHeight: "320px",
+          border: "2px solid #7c3aed",
+          cursor: "zoom-in",
+        }}
+        onClick={() => setImgViewer(imgUrl(form.caD_Image_URL))}
+      />
+
+      <div className="text-muted small mt-2">
+        Click image to enlarge
+      </div>
+    </div>
+  </div>
+)}  
 {/* Completion Details */}
               {(form.order_Complete_DT) && (
                  <div className="col-12">
@@ -562,24 +587,29 @@ const SectionLabel = ({ children }) => (
               <div className="card-header">Completion Details</div>
               <div className="card-body">
                 <div className="row g-3">
-  <InfoRow label="Final Gross Weight"          value={form.final_Gross_Weight} />
-  <InfoRow label="No. of Diamonds"       value={form.final_Noof_Diamonds} />
-  <InfoRow label="Final Diamond Weight"        value={form.final_Diamond_Weight} />
-  
+  <InfoRow label="Final Gross Weight" value={form.final_Gross_Weight} />
+<InfoRow label="No. of Diamonds" value={form.final_Noof_Diamonds} />
+<InfoRow label="Final Diamond Weight" value={form.final_Diamond_Weight} />
+<InfoRow label="Diamond Value" value={form.diamond_Value} />
 
-  <InfoRow label="No. of Colour Stones"        value={form.noOfColour_Stone} />
-  <InfoRow label="Colour Stone Weight"         value={form.colourStone_Weight} />
-  <InfoRow label="Other Colour Stones"         value={form.others_NoOfColour_Stone} />
-  <InfoRow label="Other Colour Stone Weight"   value={form.others_Colour_Stone_Weight} />
+<InfoRow label="No. of Colour Stones" value={form.noOfColour_Stone} />
+<InfoRow label="Colour Stone Weight" value={form.colourStone_Weight} />
+<InfoRow label="Colour Stone Value" value={form.colour_Stone_Value} />
+<InfoRow label="Other Colour Stones" value={form.others_NoOfColour_Stone} />
 
+<InfoRow label="Other Colour Stone Weight" value={form.others_Colour_Stone_Weight} />
+<InfoRow label="Other Colour Stone Value" value={form.other_Colour_Stone_Value} />
+<InfoRow label="Final Net Weight" value={form.final_Net_Weight} />
+<InfoRow label="Final Net Weight (24KT)" value={form.final_Net_Weight_24kt} />
 
-  <InfoRow label="Final Net Weight"            value={form.final_Net_Weight} />
-  <InfoRow label="Labour Charge"               value={form.labour_Charge} />
-  <InfoRow label="Gold Loss"                   value={form.gold_Loss} />
-  
-  <InfoRow label="Gold Loss (24Kt)"            value={form.gold_Loss_24kt} />  
-  <InfoRow label="Bill Amount"                 value={form.bill_Amount} />
-  <InfoRow label="Final Gold Weight (24Kt)"    value={form.final_Gold_Weight_24kt} />
+<InfoRow label="Labour Charge" value={form.labour_Charge} />
+<InfoRow label="Gold Loss" value={form.gold_Loss} />
+<InfoRow label="Gold Loss (24KT)" value={form.gold_Loss_24kt} />
+
+<InfoRow label="Certificate Charge" value={form.certificate_Charge} />
+<InfoRow label="Other Charges" value={form.other_Charges} />
+<InfoRow label="Bill Amount" value={form.bill_Amount} />
+<InfoRow label="Final Gold Weight (24KT)" value={form.final_Gold_Weight_24kt} />
 </div>
                 </div>
                 </div>
@@ -607,6 +637,17 @@ const SectionLabel = ({ children }) => (
 
         </div>
       </form>
+       {/* Full-screen image viewer */}
+      {imgViewer && (
+        <div className="modal show d-block" style={{ background: 'rgba(0,0,0,0.9)', cursor: 'zoom-out' }}
+          onClick={() => setImgViewer(null)}>
+          <div className="modal-dialog modal-xl modal-dialog-centered">
+            <img src={imgViewer} alt="Full view" className="img-fluid rounded"
+              style={{ maxHeight: '92vh', margin: 'auto', display: 'block' }} />
+          </div>
+        </div>
+      )}
+    
     </div>
   );
 };

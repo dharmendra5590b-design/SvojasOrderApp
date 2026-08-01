@@ -27,8 +27,17 @@ const decimalFields = [
   'labour_Charge',
   'gold_Loss',
   'gold_Loss_24kt',
-  'billAmount'
+  'billAmount',
+    "production_KT",
+  "diamond_Value",
+  "colour_Stone_Value",
+  "other_Colour_Stone_Value",
+  "final_Net_Weight_24kt",
+  "certificate_Charge",
+  "other_Charges",
+
 ];
+
 /* ── Sub-components ── */
 const InfoRow = ({ label, value }) => (
   <div className="col-md-6 mb-2">
@@ -97,20 +106,63 @@ const OrderViewModal = ({ orderId, onClose, onOrderUpdated }) => {
 
   const { user } = useAuth();
 const defaultActionForm = {
+  production_KT: 0,
+
   final_Gross_Weight: 0,
   final_Noof_Diamonds: 0,
   final_Diamond_Weight: 0,
+  diamond_Value: 0,
+
   noOfColour_Stone: 0,
   colourStone_Weight: 0,
+  colour_Stone_Value: 0,
+
   other_NoofColour_Stone: 0,
   other_ColourStone_Weight: 0,
+  other_Colour_Stone_Value: 0,
+
   final_Net_Weight: 0,
+  final_Net_Weight_24kt: 0,
+
   labour_Charge: 0,
   gold_Loss: 0,
   gold_Loss_24kt: 0,
+
+  certificate_Charge: 0,
+  other_Charges: 0,
+
   billAmount: 0,
   gold24ktWeight: 0,
 };
+
+useEffect(() => {
+  const billAmount =
+    (parseFloat(actionForm.diamond_Value) || 0) +
+    (parseFloat(actionForm.colour_Stone_Value) || 0) +
+    (parseFloat(actionForm.other_Colour_Stone_Value) || 0) +
+    (parseFloat(actionForm.certificate_Charge) || 0) +
+    (parseFloat(actionForm.labour_Charge) || 0) +
+    (parseFloat(actionForm.other_Charges) || 0);
+
+  const gold24ktWeight =
+    (parseFloat(actionForm.final_Net_Weight_24kt) || 0) +
+    (parseFloat(actionForm.gold_Loss_24kt) || 0);
+
+  setActionForm(prev => ({
+    ...prev,
+    billAmount: billAmount.toFixed(3),
+    gold24ktWeight: gold24ktWeight.toFixed(3),
+  }));
+}, [
+  actionForm.diamond_Value,
+  actionForm.colour_Stone_Value,
+  actionForm.other_Colour_Stone_Value,
+  actionForm.certificate_Charge,
+  actionForm.labour_Charge,
+  actionForm.other_Charges,
+  actionForm.final_Net_Weight_24kt,
+  actionForm.gold_Loss_24kt,
+]);
 
   /* ── fetch order ── */
   const fetchOrder = useCallback(() => {
@@ -225,6 +277,7 @@ const defaultActionForm = {
         admin_Specification: actionForm.designSpecification || '',
         is_High_Priority:    actionForm.is_High_Priority || false,
         design_Expected_DT:  actionForm.design_Expected_DT || null,
+        committed_DT:  actionForm.committed_DT || null,
       });
       if (data.statusCode === 1) { toast.success('Assigned to designer'); refresh(); onClose(); }
       else { toast.error(data.message); }
@@ -280,14 +333,26 @@ const defaultActionForm = {
 
   const completeOrder = async () => {
     const requiredFields = [
-    { key: 'final_Gross_Weight', label: 'Final Gross Weight' },
-    { key: 'final_Net_Weight', label: 'Final Net Weight' },
-    { key: 'labour_Charge', label: 'Labour Charge' },
-    { key: 'gold_Loss', label: 'Gold Loss' },
-    { key: 'gold_Loss_24kt', label: '24kt Gold Loss' },
-    { key: 'billAmount', label: 'Bill Amount' },
-    { key: 'gold24ktWeight', label: '24kt Gold Weight' },
-  ];
+  { key: 'production_KT', label: 'Production KT' },
+
+  { key: 'final_Gross_Weight', label: 'Final Gross Weight' },
+  { key: 'final_Net_Weight', label: 'Final Net Weight' },
+  { key: 'final_Net_Weight_24kt', label: 'Final Net Weight (24KT)' },
+
+  { key: 'labour_Charge', label: 'Labour Charge' },
+  { key: 'gold_Loss', label: 'Gold Loss' },
+  { key: 'gold_Loss_24kt', label: '24KT Gold Loss' },
+
+  { key: 'diamond_Value', label: 'Diamond Value' },
+  { key: 'colour_Stone_Value', label: 'Colour Stone Value' },
+  { key: 'other_Colour_Stone_Value', label: 'Other Colour Stone Value' },
+
+  { key: 'certificate_Charge', label: 'Certificate Charge' },
+  { key: 'other_Charges', label: 'Other Charges' },
+
+  { key: 'billAmount', label: 'Bill Amount' },
+  { key: 'gold24ktWeight', label: '24KT Gold Weight' },
+];
 
   for (const field of requiredFields) {
     const value = actionForm[field.key];
@@ -399,7 +464,19 @@ const defaultActionForm = {
         </div>
       );
     }
-
+/*Assing To Desginer */
+if(order.order_Status==='Assigned To Designer')
+{
+  return (
+        <div className="card border-0 bg-light mt-2">
+          <div className="card-body">
+            <div className="d-flex gap-2">
+              <button className="btn btn-sm btn-outline-danger" onClick={() => setCancelModal(true)}>Cancel Order</button>
+            </div>
+          </div>
+        </div>
+      );
+}
     /* Step 2 — Design Uploaded */
     if (order.order_Status === 'Design Uploaded') {
       return (
@@ -439,7 +516,7 @@ const defaultActionForm = {
               <button className="btn btn-sm btn-warning" onClick={() => setRedesignModal(true)} disabled={actionLoading}>
                 🔄 Request Redesign
               </button>
-              <button className="btn btn-sm btn-outline-danger ms-auto" onClick={() => setCancelModal(true)}>Cancel Order</button>
+              <button className="btn btn-sm btn-outline-danger" onClick={() => setCancelModal(true)}>Cancel Order</button>
             </div>
           </div>
         </div>
@@ -449,9 +526,13 @@ const defaultActionForm = {
     /* Step 3 — Design Approved */
     if (order.order_Status === 'Design Approved') {
       return (
+        <>
         <div className="alert alert-info py-2 mt-2 mb-0">
-          <small>⏳ Waiting for <strong>customer confirmation</strong>. No action required.</small>
+          <small>⏳ Waiting for <strong>customer confirmation</strong>. No action required.</small>          
         </div>
+        <br/>
+        <button className="btn btn-sm btn-outline-danger" onClick={() => setCancelModal(true)}>Cancel Order</button>
+        </>
       );
     }
 
@@ -596,6 +677,7 @@ const defaultActionForm = {
               {actionLoading ? <span className="spinner-border spinner-border-sm me-1" /> : null}
               Assign to Development Team
             </button>
+            &nbsp;&nbsp;<button className="btn btn-sm btn-outline-danger" onClick={() => setCancelModal(true)}>Cancel Order</button>
           </div>
         </div>
       );
@@ -609,21 +691,28 @@ const defaultActionForm = {
             <SectionLabel>Complete Order</SectionLabel>
             <div className="row g-2 mb-3">
               {[
-                { key: 'final_Gross_Weight',  label: 'Final Gross Weight *', step:'0.01' }, 
-                { key: 'final_Noof_Diamonds',  label: 'No. of Diamonds' , step:'1'},               
-                { key: 'final_Diamond_Weight', label: 'Final Diamond Weight' , step:'0.001'},
-                { key: 'noOfColour_Stone',  label: 'No. of Colour Stone' , step:'1'},
-                { key: 'colourStone_Weight', label: 'Colour Stone Weight' , step:'0.001'},
-                { key: 'other_NoofColour_Stone',  label: 'Other No. of Colour Stone', step:'1' },
-                { key: 'other_ColourStone_Weight', label: 'Other Colour Stone Weight' , step:'0.001'},
-                { key: 'final_Net_Weight',     label: 'Final Net Weight' , step:'0.001'},
-                 { key: 'labour_Charge',     label: 'Labour Charge *' , step:'0.001'},
-                  { key: 'gold_Loss',     label: 'Gold Loss *' , step:'0.001'},
-                   { key: 'gold_Loss_24kt',     label: '24kt Gold Loss *' , step:'0.001'},
+                { key: 'production_KT',  label: 'Production KT *', step:'0.01',readonly:false}, 
+                { key: 'final_Gross_Weight',  label: 'Final Gross Weight *', step:'0.01',readonly:false }, 
+                { key: 'final_Noof_Diamonds',  label: 'No. of Diamonds' , step:'1',readonly:false},               
+                { key: 'final_Diamond_Weight', label: 'Final Diamond Weight' , step:'0.001',readonly:false},
+                { key: 'diamond_Value', label: 'Diamond Value' , step:'0.001',readonly:false},
+                { key: 'noOfColour_Stone',  label: 'No. of Colour Stone' , step:'1',readonly:false},
+                { key: 'colourStone_Weight', label: 'Colour Stone Weight' , step:'0.001',readonly:false},
+                { key: 'colour_Stone_Value', label: 'Colour Stone Value' , step:'0.001',readonly:false},
+                { key: 'other_NoofColour_Stone',  label: 'Other No. of Colour Stone', step:'1',readonly:false },
+                { key: 'other_ColourStone_Weight', label: 'Other Colour Stone Weight' , step:'0.001',readonly:false},
+                { key: 'other_Colour_Stone_Value', label: 'Other Colour Stone Value' , step:'0.001',readonly:false},
+                { key: 'final_Net_Weight',     label: 'Final Net Weight' , step:'0.001',readonly:false},
+                { key: 'final_Net_Weight_24kt',     label: 'Final Net Weight (24KT)' , step:'0.001',readonly:false},
+                 { key: 'labour_Charge',     label: 'Labour Charge *' , step:'0.001',readonly:false},
+                  { key: 'gold_Loss',     label: 'Gold Loss *' , step:'0.001',readonly:false},
+                   { key: 'gold_Loss_24kt',     label: '24kt Gold Loss *' , step:'0.001',readonly:false},
+                   { key: 'certificate_Charge',     label: 'Certificate Charge *' , step:'0.001',readonly:false},
+                   { key: 'other_Charges',     label: 'Other Charges *' , step:'0.001',readonly:false},
                    { type: 'divider', title: 'Ledger Entry' },
 
-                { key: 'billAmount',           label: 'Bill Amount *' , step:'0.001'},
-                { key: 'gold24ktWeight',       label: '24kt Gold Weight' , step:'0.001'},
+                { key: 'billAmount',           label: 'Bill Amount *' , step:'0.001',readonly:true},
+                { key: 'gold24ktWeight',       label: '24kt Gold Weight' , step:'0.001',readonly:true },
               ].map(f => (
                 <>
                {f.type === 'divider'? <div className="col-12">
@@ -637,6 +726,7 @@ const defaultActionForm = {
                   <label className="form-label small fw-semibold">{f.label}</label>
                   <input
   type="text"
+  readOnly={f.readonly}
   inputMode={integerFields.includes(f.key) ? "numeric" : "decimal"}
   className="form-control form-control-sm"
   value={actionForm[f.key]}
@@ -670,6 +760,7 @@ const defaultActionForm = {
               {actionLoading ? <span className="spinner-border spinner-border-sm me-1" /> : null}
               Mark as Completed
             </button>
+            &nbsp;&nbsp;<button className="btn btn-sm btn-outline-danger" onClick={() => setCancelModal(true)}>Cancel Order</button>
           </div>
         </div>
       );
@@ -745,7 +836,7 @@ const defaultActionForm = {
                 <div className="row g-0">
                   <InfoRow label="Order Number"  value={order.order_Number} />
                   <InfoRow label="Order Date"    value={fmt(order.order_Date)} />
-                  <InfoRow label="Delivery Date" value={fmt(order.delivery_Date)} />
+                  <InfoRow label="Expected Delivery Date" value={fmt(order.delivery_Date)} />
                   <InfoRow label="Design"        value={order.design} />
                   <InfoRow label="Quantity"      value={order.quantity} />
                   <InfoRow label="Size"          value={order.size} />
@@ -868,6 +959,12 @@ const defaultActionForm = {
 
   <InfoRow label="No. of Colour Stones"        value={order.noOfColour_Stone} />
   <InfoRow label="Colour Stone Weight"         value={order.colourStone_Weight} />
+  <InfoRow label="Diamond Value"         value={order.diamond_Value} />
+  <InfoRow label="Colour Stone Value"         value={order.colour_Stone_Value} />
+  <InfoRow label="Other Colour Stone Value"         value={order.other_Colour_Stone_Value} />
+  <InfoRow label="Final Net Weight (24KT)"         value={order.final_Net_Weight_24kt} />
+  <InfoRow label="Certificate Charge"         value={order.certificate_Charge} />
+  <InfoRow label="Other Charges"         value={order.other_Charges} />
  {/* <InfoRow label="Other Colour Stones"         value={order.others_NoOfColour_Stone} />
   <InfoRow label="Other Colour Stone Weight"   value={order.others_Colour_Stone_Weight} />
 

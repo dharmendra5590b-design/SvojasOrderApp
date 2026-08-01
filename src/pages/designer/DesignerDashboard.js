@@ -225,8 +225,7 @@ const clearCadFile = () => {
                       ['Size',                      selected.size                    || '—'],
                       ['Gold Weight',               selected.weight                  ?? '—'],
                       ['Stone',                     selected.stone_Name              || '—'],
-                      ['Diamond Quality',           selected.diamond_Quality         || '—'],
-                      ['No. of Diamonds',           selected.noOf_Diamonds           ?? '—'],
+                      //  ['No. of Diamonds',           selected.noOf_Diamonds           ?? '—'],
                       ['Diamond Weight',            selected.diamond_Weight          ?? '—'],
                       ['Colour Stone Required',     selected.is_Colour_Required
                                                       ? (selected.colour_Stone_Name  || 'Yes')
@@ -234,10 +233,10 @@ const clearCadFile = () => {
                       ['Colour Stone',              selected.colour_Stone            || '—'],
                       ['No. of Colour Stones',      selected.noOfColour_Stone        ?? '—'],
                       ['Colour Stone Weight',       selected.colourStone_Weight      ?? '—'],
-                      ['Certificate Required',      selected.is_Certificate_Required
-                                                      ? (selected.cretificate_Name   || 'Yes')
-                                                      : 'No'],
-                      ['Delivery Date',             fmt(selected.delivery_Date)],
+                      //['Certificate Required',      selected.is_Certificate_Required
+                      //                                ? (selected.cretificate_Name   || 'Yes')
+                      //                                : 'No'],
+                     // ['Expected Delivery Date',             fmt(selected.delivery_Date)],
                       ['Designer Weight',           selected.designer_Weight         ?? '—'],
                       ['Designer Diamond Weight',   selected.designer_Diamond_Weight ?? '—'],
                       ['Designer No. of Diamonds',  selected.designer_NoOf_Diamonds  ?? '—'],

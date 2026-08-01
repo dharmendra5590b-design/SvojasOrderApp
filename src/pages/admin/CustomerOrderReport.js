@@ -86,7 +86,7 @@ const YN = v => v
 
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
+  {/*  <div className="d-flex justify-content-between align-items-center mb-4">
         <h5 className="fw-bold mb-0">Customer Order Report</h5>
         <div className="d-flex gap-2">
           <button className="btn btn-outline-secondary btn-sm no-print" onClick={() => window.print()}>
@@ -96,7 +96,7 @@ const YN = v => v
             <i className="bi bi-file-earmark-excel me-1"></i>Export
           </button>
         </div>
-      </div>
+      </div>*/}
 
       <div className="card mb-3 no-print">
         <div className="card-body">
@@ -119,14 +119,14 @@ const YN = v => v
                 {customers.map(c => <option key={c.customer_ID} value={c.customer_ID}>{c.customer_Name}</option>)}
               </select>
             </div>
-            <div className="col-md-2">
+         {/*  <div className="col-md-2">
               <label className="form-label fw-semibold small">Status</label>
               <select className="form-select form-select-sm"
                 value={filters.status} onChange={e => setFilters({ ...filters, status: e.target.value })}>
                 <option value="">All</option>
                 {Object.keys(STATUS_COLORS).map(s => <option key={s} value={s}>{s.replace(/_/g, ' ').toUpperCase()}</option>)}
               </select>
-            </div>
+            </div> */} 
             <div className="col-md-1 d-flex align-items-end">
               <button className="btn btn-primary btn-sm w-100" onClick={load}>Go</button>
             </div>
@@ -148,7 +148,7 @@ const YN = v => v
                            <th>Order Number</th>
                            <th>Date</th>
                            <th>Design</th>
-                           <th>Delivery Date</th>
+                           <th>Expected Delivery Date</th>
                            <th>Designer&nbsp;Assigned</th>
                            <th>Design&nbsp;Confirmed</th>
                            <th>You&nbsp;Approved</th>

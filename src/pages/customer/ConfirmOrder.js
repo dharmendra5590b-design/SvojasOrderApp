@@ -171,7 +171,7 @@ const ConfirmOrder = () => {
                     ['Diamond Wt',      selected.diamond_Weight ? `${selected.diamond_Weight} ct` : '—'], // was: selected.diamondWeight
                     ['No. Diamonds',    selected.noOf_Diamonds   ?? '—'],          // was: selected.numberOfStones
                     ['Order Date',      selected.order_Date      || '—'],          // NEW
-                    ['Delivery Date',   selected.delivery_Date
+                    ['Expected Delivery Date',   selected.delivery_Date
                                           ? new Date(selected.delivery_Date).toLocaleDateString('en-IN')
                                           : '—'],                                 // NEW
                   ].map(([k, v]) => (
