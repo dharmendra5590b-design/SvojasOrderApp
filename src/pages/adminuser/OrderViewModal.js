@@ -406,7 +406,7 @@ useEffect(() => {
           <div className="card-body">
             <SectionLabel>Assign to Designer</SectionLabel>
             <div className="row g-2 mb-3">
-              <div className="col-md-6">
+              <div className="col-md-4">
                 <label className="form-label small fw-semibold">Designer *</label>
                 <select className="form-select form-select-sm" value={actionForm.designerId || ''}
                   onChange={e => setActionForm({ ...actionForm, designerId: e.target.value })}>
@@ -416,12 +416,19 @@ useEffect(() => {
                   ))}
                 </select>
               </div>
-              <div className="col-md-6">
+              <div className="col-md-4">
                 <label className="form-label small fw-semibold">Design Expected Date</label>
                 <input type="date" className="form-control form-control-sm"
                   value={actionForm.design_Expected_DT || ''}
                   min={new Date().toISOString().split('T')[0]}
                   onChange={e => setActionForm({ ...actionForm, design_Expected_DT: e.target.value })} />
+              </div>
+              <div className="col-md-4">
+                <label className="form-label small fw-semibold">Committed Date</label>
+                <input type="date" className="form-control form-control-sm"
+                  value={actionForm.committed_DT || ''}
+                  min={new Date().toISOString().split('T')[0]}
+                  onChange={e => setActionForm({ ...actionForm, committed_DT: e.target.value })} />
               </div>
               <div className="col-12">
                 <div onClick={() => setActionForm({ ...actionForm, is_High_Priority: !actionForm.is_High_Priority })}

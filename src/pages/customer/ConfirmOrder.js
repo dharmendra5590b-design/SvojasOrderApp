@@ -173,7 +173,10 @@ const ConfirmOrder = () => {
                     ['Order Date',      selected.order_Date      || '—'],          // NEW
                     ['Expected Delivery Date',   selected.delivery_Date
                                           ? new Date(selected.delivery_Date).toLocaleDateString('en-IN')
-                                          : '—'],                                 // NEW
+                                          : '—'],  
+                  ['Committed Date',   selected.committed_Date
+                                          ? new Date(selected.committed_Date).toLocaleDateString('en-IN')
+                                          : '—'],                                     // NEW
                   ].map(([k, v]) => (
                     <div className="col-6 col-md-3" key={k}>
                       <div className="text-muted" style={{ fontSize: '0.75rem' }}>{k}</div>

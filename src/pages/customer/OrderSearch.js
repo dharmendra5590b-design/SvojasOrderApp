@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-
+import OrderPrintModal from '../adminuser/OrderPrintModal'; 
 const STATUS_META = {
   pending:              { label: 'Pending',              color: 'warning'   },
   design_pending:       { label: 'Design Pending',       color: 'info'      },
@@ -16,7 +16,10 @@ const STATUS_META = {
   assigned_development: { label: 'Sent to Production',   color: 'primary'   },
   under_processing:     { label: 'Under Processing',     color: 'secondary' },
   completed:            { label: 'Completed',            color: 'success'   },
-  cancelled:            { label: 'Cancelled',            color: 'danger'    },
+  cancelled:            { label: 'Cancelled',            color: 'danger' },
+  Cancel:            { label: 'Cancel',            color: 'danger' },
+    Active:     { label: 'Active',     color: 'success'
+     },
 };
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
@@ -30,6 +33,7 @@ const OrderSearch = () => {
   const [cancelReason,setCancelReason]= useState('');
   const [imgViewer,   setImgViewer]   = useState(null);
 const [designs, setDesigns] = useState([]);
+const [printOrderId, setPrintOrderId] = useState(null);
   // ─── Pagination state ───
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize,    setPageSize]    = useState(10);
@@ -175,6 +179,7 @@ const [designs, setDesigns] = useState([]);
                       <th>Date</th>
                       <th>Design</th>
                       <th>Expected Delivery Date</th>
+                      <th>Committed Date</th>
                       <th>Assigned</th>
                       <th>Confirmed</th>
                       <th>Approved</th>
@@ -196,6 +201,11 @@ const [designs, setDesigns] = useState([]);
                             <td style={{ whiteSpace: 'nowrap' }}>{new Date(o.order_Date).toLocaleDateString('en-IN')}</td>
                             <td>{o.design || '—'}</td>
                             <td style={{ whiteSpace: 'nowrap' }}>{new Date(o.delivery_Date).toLocaleDateString('en-IN')}</td>
+                            <td style={{ whiteSpace: 'nowrap' }}>
+                                  {o.committed_DT
+                                    ? new Date(o.committed_DT).toLocaleDateString('en-IN')
+                                    : '-'}
+                                </td>
                             <td className="text-center">
                               {YN(o.designer_Assgined_DT)}
                               {o.designer_Assgined_DT && <div className="text-muted" style={{ fontSize: '0.72rem' }}>{new Date(o.designer_Assgined_DT).toLocaleDateString('en-IN')}</div>}
@@ -246,23 +256,23 @@ const [designs, setDesigns] = useState([]);
                               {/* Repeat Order */}
                                {(o.order_Completed_DT)?
                               <Link
-  to="#"
-  className="btn btn-sm btn-outline-success me-1"
-  title="Repeat Order"
-  onClick={(e) => {
-    e.preventDefault();
+                                to="#"
+                                className="btn btn-sm btn-outline-success me-1"
+                                title="Repeat Order"
+                                onClick={(e) => {
+                                  e.preventDefault();
 
-    if (window.confirm(    "Are you sure you want to repeat this order with modifications?")) {
-      window.location.href = `/customer/new-order?RepeatorderModification=${o.order_ID}`;
-    }
-    else
-    {
-      window.location.href = `/customer/new-order?PassRepeatOrder=${o.order_ID}`;
-    }
-  }}
->
-  <i className="bi bi-arrow-repeat"></i>
-</Link>:null}
+                                  if (window.confirm(    "Are you sure you want to repeat this order with modifications?")) {
+                                    window.location.href = `/customer/new-order?RepeatorderModification=${o.order_ID}`;
+                                  }
+                                  else
+                                  {
+                                    window.location.href = `/customer/new-order?PassRepeatOrder=${o.order_ID}`;
+                                  }
+                                }}
+                              >
+                                <i className="bi bi-arrow-repeat"></i>
+                              </Link>:null}
 
                               {/* Cancel */}
                               {canEdit && o.status !== 'cancelled' && (
@@ -276,6 +286,11 @@ const [designs, setDesigns] = useState([]);
                                   <i className="bi bi-x-circle"></i>
                                 </button>
                               )}
+                              {o.order_Completed_DT && (
+                                      <button className="btn btn-sm btn-outline-secondary" onClick={() => setPrintOrderId(o.order_ID)}>
+                                        <i className="bi bi-printer"></i>
+                                      </button>
+                                    )}
                             </td>
                           </tr>
                         );
@@ -494,6 +509,7 @@ const [designs, setDesigns] = useState([]);
           </div>
         </div>
       )}
+      <OrderPrintModal orderId={printOrderId} onClose={() => setPrintOrderId(null)} />
     </div>
   );
 };

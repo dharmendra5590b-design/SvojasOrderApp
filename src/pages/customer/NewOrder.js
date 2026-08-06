@@ -138,6 +138,12 @@ const [imgViewer,  setImgViewer]  = useState(null);
   labour_Charge:           o.labour_Charge ?? '',
   gold_Loss_24kt:          o.gold_Loss_24kt ?? '',
   bill_Amount:             o.bill_Amount ?? '',
+  diamond_Value:o.diamond_Value,
+  colour_Stone_Value:o.colour_Stone_Value,
+  other_Colour_Stone_Value:o.other_Colour_Stone_Value,
+  final_Net_Weight_24kt:o.final_Net_Weight_24kt,
+  certificate_Charge:o.certificate_Charge,
+  other_Charges:o.other_Charges,
   final_Gold_Weight_24kt:  o.final_Gold_Weight_24kt ?? '',
 order_Complete_DT:o.order_Complete_DT,
 caD_Image_URL:o.caD_Image_URL
@@ -581,7 +587,7 @@ const SectionLabel = ({ children }) => (
   </div>
 )}  
 {/* Completion Details */}
-              {(form.order_Complete_DT) && (
+              {(form.order_Complete_DT) && !isRepeatMod && !isPassRepeat && (
                  <div className="col-12">
             <div className="card">
               <div className="card-header">Completion Details</div>

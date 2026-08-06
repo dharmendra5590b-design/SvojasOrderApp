@@ -154,3 +154,45 @@ body {
   .sidebar, .topbar, .no-print { display: none !important; }
   .main-content { margin-left: 0; }
 }
+
+@media print {
+
+  body * {
+    visibility: hidden;
+  }
+
+  #order-print-area,
+  #order-print-area * {
+    visibility: visible;
+  }
+
+  #order-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  .modal,
+  .modal-dialog,
+  .modal-content,
+  .modal-body {
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  table {
+    page-break-inside: avoid;
+  }
+}

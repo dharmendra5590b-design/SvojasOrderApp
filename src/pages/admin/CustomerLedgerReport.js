@@ -317,6 +317,15 @@ const printRef = useRef();
             </>
           )}
         </div>
+        <style>
+{`
+@media print {
+body * {
+    visibility: visible;
+  }
+}
+`}
+</style>
       </div>
     </div>
   );
