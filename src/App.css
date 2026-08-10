@@ -156,6 +156,11 @@ body {
 }
 
 @media print {
+@page {
+    size: auto;
+    margin: 0;          /* removes the browser-reserved area where the
+                            date/time, title, URL, and page number get drawn */
+  }
 
   body * {
     visibility: hidden;

@@ -25,7 +25,7 @@ const ChangePasswordPage = () => {
     if (!validate()) return;
     setLoading(true);
     try {
-     const {data}= await api.post('https://localhost:8081/api/Login/changepassword', {
+     const {data}= await api.post('http://localhost:8081/api/Login/changepassword', {
         password: form.currentPassword,
         newPassword: form.newPassword,
         userID:user.entity_ID

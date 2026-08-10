@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 
-const BASE_URL = 'https://localhost:8081';
+const BASE_URL = 'http://localhost:8081';
 
 // Image fields come back as relative paths (e.g. "uploads/xyz.jpg"), not full URLs.
 const resolveImageUrl = (path) => {
@@ -116,16 +116,7 @@ const OrderPrintModal = ({ orderId, onClose }) => {
               <div className="text-center py-5 text-muted">Unable to load order.</div>
             ) : (
               <div id="order-print-area" style={{ padding: "5px", fontFamily: "Arial" }}>
-  <div
-    style={{
-      textAlign: "center",
-      fontWeight: "bold",
-      fontSize: "15px",
-      marginBottom: "4px",
-    }}
-  >
-    Jewel Quote
-  </div>
+ 
 
   <table
     style={{

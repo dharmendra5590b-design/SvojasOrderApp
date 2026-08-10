@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
-const BASE_URL = 'https://localhost:8081';
+const BASE_URL = 'http://localhost:8081';
 const imgUrl = (fn) => fn ? `${BASE_URL}/${fn}` : null;
 
 const fmt = (dateStr) => {
@@ -956,7 +956,7 @@ if(order.order_Status==='Assigned To Designer')
               )}
 </div>
               {/* Completion Details */}
-              {(order.final_Gross_Weight || order.final_Net_Weight || order.order_Complete_DT) && (
+              {(order.order_Complete_DT) && (
                 <div className="mb-4">
                   <SectionLabel>Completion Details</SectionLabel>
                   <div className="row g-0">

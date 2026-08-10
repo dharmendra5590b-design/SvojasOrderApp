@@ -30,7 +30,7 @@ const [imgViewer,  setImgViewer]  = useState(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const BASE_URL = 'https://localhost:8081';
+  const BASE_URL = 'http://localhost:8081';
 // Image URL built from BASE_URL + relative path returned by API
   const imgUrl = url => url ? `${BASE_URL}/${url}` : null;
   const searchParams = new URLSearchParams(location.search);
