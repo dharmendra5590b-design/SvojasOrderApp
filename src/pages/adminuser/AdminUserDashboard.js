@@ -6,7 +6,7 @@ const AdminUserDashboard = () => {
   const [counts, setCounts] = useState({});
 
   useEffect(() => {
-    api.get('http://localhost:8081/api/adminDashboard/GetAdminDashboard').then(({ data }) => {
+    api.get('https://api.jewelquote.in/api/adminDashboard/GetAdminDashboard').then(({ data }) => {
     //  const c = {};
      // data.forEach(o => { c[o.status] = (c[o.status] || 0) + 1; });
       //setCounts(c);
@@ -34,24 +34,25 @@ const AdminUserDashboard = () => {
   return (
     <div>
       <h5 className="fw-bold mb-4">Admin User Dashboard</h5>
-      <div className="row row-cols-2 row-cols-md-3 g-3">
-        {tiles.map(t => (
-          <div className="col" key={t.status}>
-            <Link to={t.to} className="text-decoration-none">
-              <div className={`stat-card ${t.color}`}>
-                <div className="d-flex justify-content-between">
-                  <div>
-                    <div className="text-muted small">{t.label}</div>
-                    <div className="fs-2 fw-bold">{counts[t.status] ?? 0}</div>
-                    <div className="text-muted" style={{ fontSize: '0.78rem' }}>{t.desc}</div>
-                  </div>
-                  <span style={{ fontSize: 36 }}>{t.icon}</span>
-                </div>
-              </div>
-            </Link>
+   <div className="row row-cols-1 row-cols-sm-3 row-cols-lg-4 g-2 g-md-3">
+  {tiles.map(t => (
+    <div className="col" key={t.status}>
+      <Link to={t.to} className="text-decoration-none">
+        <div className={`stat-card ${t.color} h-100`}>
+          <div className="d-flex justify-content-between align-items-start">
+            <div className="flex-grow-1 me-2" style={{ minWidth: 0 }}>
+              <div className="text-muted small">{t.label}</div>
+              <div className="fs-4 fs-md-2 fw-bold">{counts[t.status] ?? 0}</div>
+              <div className="text-muted d-sm-block" style={{ fontSize: '0.78rem' }}>{t.desc}</div>
+            </div>
+            <span className="flex-shrink-0" style={{ fontSize: 'clamp(18px, 4.5vw, 36px)' }}>{t.icon}</span>
           </div>
-        ))}
-      </div>
+        </div>
+      </Link>
+    </div>
+  ))}
+</div>
+
     </div>
   );
 };

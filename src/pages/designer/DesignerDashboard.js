@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback,useRef } from 'react';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext'
-const BASE_URL = 'http://localhost:8081';
+import Designerprintmodal from '../designer/Designerprintmodal'; 
+const BASE_URL = 'https://api.jewelquote.in';
 
 const fmt = (dateStr) => {
   if (!dateStr) return '—';
@@ -21,6 +22,7 @@ const DesignerDashboard = () => {
   const [imgViewer, setImgViewer] = useState(null);
   const [tab,       setTab]       = useState('pending'); // 'pending' | 'done'
   const [cadPreview, setCadPreview] = useState(null);
+  const [printOrderId, setPrintOrderId] = useState(null); // orderId for print preview modal
 const fileInputRef = useRef(null);
 const { user } = useAuth();
   const load = useCallback(async () => {
@@ -207,7 +209,16 @@ const clearCadFile = () => {
             <div className="card">
               <div className="card-header d-flex justify-content-between align-items-center">
                 <span className="fw-semibold">Order: {selected.order_Number}</span>
-                <button className="btn-close" onClick={() => setSelected(null)} />
+                <div className="d-flex align-items-center gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => setPrintOrderId(selected.order_ID)}
+                  >
+                    <i className="bi bi-printer me-1"></i>Print
+                  </button>
+                  <button className="btn-close" onClick={() => setSelected(null)} />
+                </div>
               </div>
               <div className="card-body" style={{ maxHeight: '78vh', overflowY: 'auto' }}>
 
@@ -263,14 +274,7 @@ const clearCadFile = () => {
                   </div>
                 )}
 
-                {/* Redesign note */}
-                {selected.redesignSpecification && (
-                  <div className="alert alert-warning py-2 mb-3">
-                    <div className="small fw-semibold mb-1">⚠️ Redesign Required:</div>
-                    <div className="small">{selected.redesignSpecification}</div>
-                  </div>
-                )}
-
+               
                 {/* Reference images */}
                 <div className="mb-3">
                   <div className="small fw-semibold text-muted text-uppercase mb-2">Reference Images</div>
@@ -322,7 +326,25 @@ const clearCadFile = () => {
                     />
                   </div>
                 )}
+ {/* Redesign note */}
+                {selected.redesignSpecification && (
+                  <div className="alert alert-warning py-2 mb-3">
+                    <div className="small fw-semibold mb-1">⚠️ Redesign Required:</div>
+                    <div className="small">{selected.redesignSpecification}</div>
+                  </div>
+                )}
+                  {selected.reworkSpecificationList && selected.reworkSpecificationList.length>0 && (
+                  <div className="alert alert-info py-2 mb-3">
+                    <div className="small fw-semibold mb-1">Rework Specification from Admin:</div>
+                    
+      {selected.reworkSpecificationList.map((spec, index) => (
+        <div className="small mb-1" key={index}>
+          {spec}
+        </div>
+      ))}
 
+                  </div>
+                )}
                 {/* Upload panel – only for pending */}
                 {tab === 'pending' && (
                   <div className="border rounded p-3 mt-2">
@@ -462,6 +484,12 @@ const clearCadFile = () => {
           </div>
         </div>
       )}
+
+      {/* Designer order print preview modal */}
+      <Designerprintmodal
+        orderId={printOrderId}
+        onClose={() => setPrintOrderId(null)}
+      />
     </div>
   );
 };

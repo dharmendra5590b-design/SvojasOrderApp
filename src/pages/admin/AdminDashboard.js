@@ -20,7 +20,7 @@ const AdminDashboard = () => {
   const [counts, setCounts] = useState({});
 
   useEffect(() => {
-    api.get('http://localhost:8081/api/adminDashboard/GetAdminDashboard').then(({ data }) => {
+    api.get('https://api.jewelquote.in/api/adminDashboard/GetAdminDashboard').then(({ data }) => {
     //  const c = {};
      // data.forEach(o => { c[o.status] = (c[o.status] || 0) + 1; });
       //setCounts(c);
@@ -48,25 +48,24 @@ const AdminDashboard = () => {
   return (
     <div>
       <h5 className="fw-bold mb-4">Admin Dashboard</h5>
-     <div className="row row-cols-2 row-cols-md-3 g-3">
-             {tiles.map(t => (
-               <div className="col" key={t.status}>
-                 <Link to={t.to} className="text-decoration-none">
-                   <div className={`stat-card ${t.color}`}>
-                     <div className="d-flex justify-content-between">
-                       <div>
-                         <div className="text-muted small">{t.label}</div>
-                         <div className="fs-2 fw-bold">{counts[t.status] ?? 0}</div>
-                         <div className="text-muted" style={{ fontSize: '0.78rem' }}>{t.desc}</div>
-                       </div>
-                       <span style={{ fontSize: 36 }}>{t.icon}</span>
-                     </div>
-                   </div>
-                 </Link>
-               </div>
-             ))}
-           
-           </div>
+     <div className="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3">
+  {tiles.map(t => (
+    <div className="col" key={t.status}>
+      <Link to={t.to} className="text-decoration-none">
+        <div className={`stat-card ${t.color} h-100`}>
+          <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <div className="text-muted small">{t.label}</div>
+              <div className="fs-2 fw-bold">{counts[t.status] ?? 0}</div>
+              <div className="text-muted" style={{ fontSize: '0.78rem' }}>{t.desc}</div>
+            </div>
+            <span style={{ fontSize: 'clamp(24px, 5vw, 36px)' }}>{t.icon}</span>
+          </div>
+        </div>
+      </Link>
+    </div>
+  ))}
+</div>
 <div className="row row-cols-2 row-cols-md-3 g-3">
   <br/>
 </div>

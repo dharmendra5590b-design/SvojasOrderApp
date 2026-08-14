@@ -14,7 +14,7 @@ const CustomerMaster = () => {
   const [search, setSearch] = useState('');
 const [showPassword, setShowPassword] = useState({});
   const load = async () => {
-    try { const { data:cust } = await api.post('http://localhost:8081/api/customer/getcustomer',{customer_ID:0}); 
+    try { const { data:cust } = await api.post('https://api.jewelquote.in/api/customer/getcustomer',{customer_ID:0}); 
     setCustomers(cust.data); } catch {}
   
   };
@@ -39,7 +39,7 @@ const [showPassword, setShowPassword] = useState({});
     setLoading(true);
     try {
       if (editId) {
-       const  {data}=  await api.post(`http://localhost:8081/api/customer/savecustomer`, form);
+       const  {data}=  await api.post(`https://api.jewelquote.in/api/customer/savecustomer`, form);
         if(data.statusCode===1)
       {   
      toast.success('Customer updated');
@@ -51,7 +51,7 @@ const [showPassword, setShowPassword] = useState({});
       }
         
       } else {
-     const  {data}=  await api.post('http://localhost:8081/api/customer/savecustomer', form);
+     const  {data}=  await api.post('https://api.jewelquote.in/api/customer/savecustomer', form);
      if(data.statusCode===1)
       {   
      toast.success('Customer created (login: mobile, password: last 6 digits)');
@@ -76,7 +76,7 @@ const [showPassword, setShowPassword] = useState({});
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this customer?')) return;
-    try { const  {data}= await api.post(`http://localhost:8081/api/customer/savecustomer`,{customer_ID:id,mode:"D"}); 
+    try { const  {data}= await api.post(`https://api.jewelquote.in/api/customer/savecustomer`,{customer_ID:id,mode:"D"}); 
    if(data.statusCode===1)
       {   
      toast.success('Customer Deleted');

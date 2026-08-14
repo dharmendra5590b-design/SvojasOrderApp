@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
-const BASE_URL = 'http://localhost:8081';
+import { useAuth } from '../../context/AuthContext';
+const BASE_URL = 'https://api.jewelquote.in';
 const ConfirmOrder = () => {
   const [orders,  setOrders]  = useState([]);
   const [loading, setLoading] = useState(false);
@@ -13,11 +14,11 @@ const ConfirmOrder = () => {
   const [submitting, setSubmitting] = useState(false);
   const [imgViewer,  setImgViewer]  = useState(null);
   const navigate = useNavigate();
-
+const { user } = useAuth();
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get(BASE_URL+'/api/order/GetPendingOrderConfirmation');
+      const { data } = await api.get(BASE_URL+'/api/order/GetPendingOrderConfirmation?customerID='+user.entity_ID );
       setOrders(data);
     } catch { toast.error('Failed to load orders'); }
     finally { setLoading(false); }

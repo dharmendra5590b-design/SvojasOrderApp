@@ -30,7 +30,7 @@ const [imgViewer,  setImgViewer]  = useState(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const BASE_URL = 'http://localhost:8081';
+  const BASE_URL = 'https://api.jewelquote.in';
 // Image URL built from BASE_URL + relative path returned by API
   const imgUrl = url => url ? `${BASE_URL}/${url}` : null;
   const searchParams = new URLSearchParams(location.search);
@@ -118,7 +118,7 @@ const [imgViewer,  setImgViewer]  = useState(null);
         diamond_Quality_ID:      o.diamond_Quality_ID     ?? '',
         diamond_Weight:          o.diamond_Weight         ?? '',
         noOf_Diamonds:           o.noOf_Diamonds          ?? '',
-        delivery_Date:           o.delivery_Date
+        delivery_Date:           o.delivery_Date && !isPassRepeat
                                    ? new Date(o.delivery_Date).toLocaleDateString('en-CA')
                                    : '',
         specification:           o.specification          ?? '',

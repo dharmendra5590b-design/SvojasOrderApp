@@ -33,7 +33,7 @@ const isMobile = useIsMobile();
         transition: 'width 0.2s, height 0.2s',
       }}
     />
-            <div>
+            <div className="overflow-hidden">
               <div className="fw-bold text-white" style={{ fontSize: '0.95rem' }}>JEWEL QUOTE</div>
               <div style={{ fontSize: '0.7rem', color: '#a78bfa' }}>Customer Portal</div>
             </div>

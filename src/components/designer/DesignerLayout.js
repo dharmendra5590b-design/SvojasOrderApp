@@ -50,6 +50,9 @@ const isMobile = useIsMobile();
           <NavLink to="/designer/orders" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <i className="bi bi-palette"></i><span>My Design Tasks</span>
           </NavLink>
+          <NavLink to="/designer/task-report" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+            <i className="bi bi-file-earmark-text"></i><span>My Task Report</span>
+          </NavLink>
         </div>
         <div className="p-2 border-top" style={{ borderColor: 'rgba(255,255,255,0.08)!important' }}>
           <NavLink to="/change-password" className="nav-link"><i className="bi bi-key"></i><span>Change Password</span></NavLink>

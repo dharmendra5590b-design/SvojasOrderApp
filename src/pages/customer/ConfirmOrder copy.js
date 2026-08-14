@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
-const BASE_URL = 'http://localhost:8081';
+const BASE_URL = 'https://api.jewelquote.in';
 const ConfirmOrder = () => {
   const [orders,  setOrders]  = useState([]);
   const [loading, setLoading] = useState(false);

@@ -36,6 +36,7 @@ import ConfirmOrder from './pages/customer/ConfirmOrder';
 // Designer
 import DesignerLayout from './components/designer/DesignerLayout';
 import DesignerDashboard from './pages/designer/DesignerDashboard';
+import DesignerTaskReport from './pages/designer/Designertaskreport';
 
 const ProtectedRoute = ({ children, roles }) => {
   const { user } = useAuth();
@@ -102,6 +103,7 @@ function App() {
           {/* DESIGNER */}
           <Route path="/designer" element={<ProtectedRoute roles={['DESIGNER']}><DesignerLayout /></ProtectedRoute>}>
             <Route path="orders" element={<DesignerDashboard />} />
+            <Route path="task-report" element={<DesignerTaskReport />} />
           </Route>
 
           <Route path="/unauthorized" element={<div className="container mt-5 text-center"><h2>Access Denied</h2></div>} />

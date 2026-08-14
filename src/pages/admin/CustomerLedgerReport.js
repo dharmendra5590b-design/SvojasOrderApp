@@ -13,7 +13,7 @@ const CustomerLedgerReport = () => {
 const printRef = useRef();
   useEffect(() => {
     if (user?.user_Type !== 'CUSTOMER') {
-      api.get('http://localhost:8081/api/customer/getcustomermapping').then(r => setCustomers(r.data)).catch(() => {});
+      api.get('https://api.jewelquote.in/api/customer/getcustomermapping').then(r => setCustomers(r.data)).catch(() => {});
       
     }
     else
@@ -41,7 +41,7 @@ const printRef = useRef();
       {
       params["customer_ID"]=selectedCustomer;
       }
-      const { data:Cust } = await api.post('http://localhost:8081/api/customer/GetCustomerLedger',params);
+      const { data:Cust } = await api.post('https://api.jewelquote.in/api/customer/GetCustomerLedger',params);
       // data[0][0] => { Customer_Name, FromDate, Todate }
       // data[1]    => [ { Trans_Date, Voucher, Particular, GoldOut, GoldIn, amountOut, amountIn }, ... ]
       if (Cust.statusCode===1) {

@@ -44,10 +44,10 @@ const [printOrderId, setPrintOrderId] = useState(null);
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.post('http://localhost:8081/api/order/GetGridOrder', { customer_ID: user.entity_ID });
+      const { data } = await api.post('https://api.jewelquote.in/api/order/GetGridOrder', { customer_ID: user.entity_ID });
       setOrders(data);
       setCurrentPage(1); // reset to first page on fresh load
-      const { data:order } = await api.get('http://localhost:8081/api/order/GetListCustomerOrder',{employee_ID:0}); 
+      const { data:order } = await api.get('https://api.jewelquote.in/api/order/GetListCustomerOrder',{employee_ID:0}); 
     setDesigns(order.design); 
     } catch { toast.error('Failed to load orders'); }
     finally { setLoading(false); }
@@ -93,7 +93,7 @@ const [printOrderId, setPrintOrderId] = useState(null);
   const handleCancel = async () => {
     if (!cancelReason.trim()) { toast.error('Cancel reason is required'); return; }
     try {
-      const { data:order } = await api.post(`http://localhost:8081/api/order/cancelOrder`, { order_ID:cancelId,user_ID:user.entity_ID, cancel_Reason:cancelReason });
+      const { data:order } = await api.post(`https://api.jewelquote.in/api/order/cancelOrder`, { order_ID:cancelId,user_ID:user.entity_ID, cancel_Reason:cancelReason });
       if(order.statusCode===1)
       {
       toast.success('Order cancelled');
@@ -109,7 +109,7 @@ const [printOrderId, setPrintOrderId] = useState(null);
     }
   };
 
-  const imgUrl = fn => fn ? `http://localhost:8081/uploads/${fn}` : null;
+  const imgUrl = fn => fn ? `https://api.jewelquote.in/uploads/${fn}` : null;
 
   const YN = v => v
     ? <span className="badge bg-success">Yes</span>
