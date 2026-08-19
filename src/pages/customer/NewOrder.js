@@ -30,7 +30,7 @@ const [imgViewer,  setImgViewer]  = useState(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const BASE_URL = 'https://api.jewelquote.in';
+  const BASE_URL = 'http://localhost:8081';
 // Image URL built from BASE_URL + relative path returned by API
   const imgUrl = url => url ? `${BASE_URL}/${url}` : null;
   const searchParams = new URLSearchParams(location.search);
@@ -73,10 +73,48 @@ const [imgViewer,  setImgViewer]  = useState(null);
   // Convenience: disabled state for a specific field
   const fd = (fieldName) => {
     if (passRepeatEnabled(fieldName)) return false;   // override for these two fields
+    if(isRepeatMod &&(fieldName === 'design_ID'))
+    {
+      return true;
+    }
     return fieldDisabled;
   };
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  // --- conditional visibility helpers ---
+  // "Plain Gold" is a Design Type value; when selected, all stone & certificate
+  // controls are irrelevant and should be hidden entirely.
+  const selectedDesignType = types.find(t => t.value === form.design_Type_ID);
+  const isPlainGoldDesignType = (selectedDesignType?.text || '').trim().toLowerCase() === 'plain gold';
+
+  // When the selected Stone is "AD" or "N/A", Diamond Quality & Certificate
+  // related controls are not applicable and should be hidden.
+  const selectedStone = stones.find(s => s.value === form.stone_ID);
+  const selectedStoneText = (selectedStone?.text || '').trim().toUpperCase();
+  const isStoneADorNA = selectedStoneText === 'AD' || selectedStoneText === 'N/A';
+
+  // Clear dependent fields when their controlling selection hides them, so
+  // stale values aren't silently submitted with the order.
+  useEffect(() => {
+    if (isPlainGoldDesignType) {
+      setForm(f => ({
+        ...f,
+        stone_ID: '', is_Colour_Required: false, colour_Stone_ID: '', colour_Stone: '',
+        is_Certificate_Required: false, certificate_ID: '', diamond_Quality_ID: '',
+        diamond_Weight: '', noOf_Diamonds: '',
+      }));
+    }
+  }, [isPlainGoldDesignType]);
+
+  useEffect(() => {
+    if (isStoneADorNA) {
+      setForm(f => ({
+        ...f,
+        diamond_Quality_ID: '', is_Certificate_Required: false, certificate_ID: '',
+      }));
+    }
+  }, [isStoneADorNA]);
 
   const load = async () => {
     try {
@@ -118,7 +156,7 @@ const [imgViewer,  setImgViewer]  = useState(null);
         diamond_Quality_ID:      o.diamond_Quality_ID     ?? '',
         diamond_Weight:          o.diamond_Weight         ?? '',
         noOf_Diamonds:           o.noOf_Diamonds          ?? '',
-        delivery_Date:           o.delivery_Date && !isPassRepeat
+        delivery_Date:           o.delivery_Date && !isPassRepeat && !isRepeatMod
                                    ? new Date(o.delivery_Date).toLocaleDateString('en-CA')
                                    : '',
         specification:           o.specification          ?? '',
@@ -146,7 +184,8 @@ const [imgViewer,  setImgViewer]  = useState(null);
   other_Charges:o.other_Charges,
   final_Gold_Weight_24kt:  o.final_Gold_Weight_24kt ?? '',
 order_Complete_DT:o.order_Complete_DT,
-caD_Image_URL:o.caD_Image_URL
+caD_Image_URL:o.caD_Image_URL,
+reworkSpecificationList:o.reworkSpecificationList
       });
 
       setExistingImages({
@@ -182,7 +221,7 @@ caD_Image_URL:o.caD_Image_URL
     if (!form.karat_ID)       e.karat_ID       = 'KT is required';
     if (!form.design_Type_ID) e.design_Type_ID = 'Design Type is required';
     if (!form.gold_Colour_ID) e.gold_Colour_ID = 'Gold Colour is required';
-    if (!form.stone_ID)       e.stone_ID       = 'Stone is required';
+    if (!isPlainGoldDesignType && !form.stone_ID) e.stone_ID = 'Stone is required';
     if (!form.delivery_Date)  e.delivery_Date  = 'Delivery date is required';
     if (!form.quantity)       e.quantity       = 'Quantity is required';
     setErrors(e);
@@ -279,7 +318,7 @@ const SectionLabel = ({ children }) => (
 
     // Images are editable in: new order, RepeatorderModification, or normal editable edit.
     // In PassRepeatOrder and non-editable normal edit they are locked.
-    const imageDisabled = isPassRepeat || (isEdit && !isRepeatMode && !isEditable);
+    const imageDisabled = (isPassRepeat || isRepeatMod) || (isEdit && !isRepeatMode && !isEditable);
 
     return (
       <div>
@@ -429,10 +468,11 @@ const SectionLabel = ({ children }) => (
             </div>
           </div>
 
-          {/* Stone Details */}
+          {/* Stone & Certificate Details — hidden entirely when Design Type is "Plain Gold" */}
+          {!isPlainGoldDesignType && (
           <div className="col-md-6">
             <div className="card h-100">
-              <div className="card-header">Stone Details</div>
+              <div className="card-header">Stone & Certificate Details</div>
               <div className="card-body">
                 <div className="row">
 
@@ -477,6 +517,8 @@ const SectionLabel = ({ children }) => (
                     </div>
                   )}
 
+                  {/* Diamond Quality — hidden when Stone is "AD" or "N/A" */}
+                  {!isStoneADorNA && (
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">Diamond Quality</label>
                     <select className="form-select" value={form.diamond_Quality_ID}
@@ -486,6 +528,7 @@ const SectionLabel = ({ children }) => (
                       {quality.map(q => <option key={q.value} value={q.value}>{q.text}</option>)}
                     </select>
                   </div>
+                  )}
 
                   <div className="col-md-6">
                     <label className="form-label fw-semibold">Diamond Weight</label>
@@ -499,35 +542,39 @@ const SectionLabel = ({ children }) => (
                       onChange={e => set('noOf_Diamonds', e.target.value)} disabled={fd('noOf_Diamonds')} />
                   </div>
 
+                  {/* Certificate controls — hidden when Stone is "AD" or "N/A" */}
+                  {!isStoneADorNA && (
+                  <div className="col-md-6">
+                    <div className="form-check mb-2">
+                      <input className="form-check-input" type="checkbox" id="cert"
+                        checked={form.is_Certificate_Required}
+                        onChange={e => set('is_Certificate_Required', e.target.checked)}
+                        disabled={fd('is_Certificate_Required')} />
+                      <label className="form-check-label" htmlFor="cert">Certificate Required</label>
+                    </div>
+
+                    {form.is_Certificate_Required && (
+                      <select className="form-select" value={form.certificate_ID}
+                        onChange={e => set('certificate_ID', e.target.value)}
+                        disabled={fd('certificate_ID')}>
+                        <option value="">Select Certificate Type</option>
+                        {certTypes.map(c => <option key={c.value} value={c.value}>{c.text}</option>)}
+                      </select>
+                    )}
+                  </div>
+                  )}
+
                 </div>
               </div>
             </div>
           </div>
+          )}
 
-          {/* Certificate & Delivery */}
-          <div className="col-md-6">
+          {/* Delivery Details */}
+          <div className={isPlainGoldDesignType ? 'col-12' : 'col-md-6'}>
             <div className="card h-100">
-              <div className="card-header">Certificate & Delivery</div>
+              <div className="card-header">Delivery Details</div>
               <div className="card-body">
-
-                <div className="form-check mb-3">
-                  <input className="form-check-input" type="checkbox" id="cert"
-                    checked={form.is_Certificate_Required}
-                    onChange={e => set('is_Certificate_Required', e.target.checked)}
-                    disabled={fd('is_Certificate_Required')} />
-                  <label className="form-check-label" htmlFor="cert">Certificate Required</label>
-                </div>
-
-                {form.is_Certificate_Required && (
-                  <div className="mb-3">
-                    <select className="form-select" value={form.certificate_ID}
-                      onChange={e => set('certificate_ID', e.target.value)}
-                      disabled={fd('certificate_ID')}>
-                      <option value="">Select Certificate Type</option>
-                      {certTypes.map(c => <option key={c.value} value={c.value}>{c.text}</option>)}
-                    </select>
-                  </div>
-                )}
 
                 <div>
                   <label className="form-label fw-semibold">Expected Delivery Date *</label>
@@ -563,7 +610,7 @@ const SectionLabel = ({ children }) => (
               </div>
             </div>
           </div>
-         {form.caD_Image_URL && (
+         {form.caD_Image_URL && !isRepeatMod && !isPassRepeat&& !isEditable && (
   <div className="card">
     <div className="card-header">CAD Image</div>
 
@@ -586,6 +633,18 @@ const SectionLabel = ({ children }) => (
     </div>
   </div>
 )}  
+ {form.reworkSpecificationList && form.reworkSpecificationList.length>0 && !isRepeatMod && !isPassRepeat&& !isEditable  && (
+                  <div className="alert alert-info py-2 mb-3">
+                    <div className="small fw-semibold mb-1">Rework Specification:</div>
+                    
+      {form.reworkSpecificationList.map((spec, index) => (
+        <div className="small mb-1" key={index}>
+          {spec}
+        </div>
+      ))}
+
+                  </div>
+                )}
 {/* Completion Details */}
               {(form.order_Complete_DT) && !isRepeatMod && !isPassRepeat && (
                  <div className="col-12">

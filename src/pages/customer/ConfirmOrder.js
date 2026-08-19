@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-const BASE_URL = 'https://api.jewelquote.in';
+const BASE_URL = 'http://localhost:8081';
 const ConfirmOrder = () => {
   const [orders,  setOrders]  = useState([]);
   const [loading, setLoading] = useState(false);
@@ -27,9 +27,14 @@ const { user } = useAuth();
   useEffect(() => { load(); }, [load]);
 
   const openOrder = async id => {
-    const { data } = await api.get(`${BASE_URL}/api/order/GetOrderView?orderID=${id}`);
+    const { data } = await api.get(`${BASE_URL}/api/order/GetOrderView?orderID=${id}&UserID=${user.user_ID}`);
     setSelected(data[0]);
     setAction(''); setReworkSpec(''); setNeedDiscuss(false);
+    // On mobile the detail panel renders below the order list in the DOM;
+    // scroll it into view so the user doesn't have to scroll past the list.
+    requestAnimationFrame(() => {
+      document.getElementById('confirm-order-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
 
   const handleSubmit = async () => {
@@ -90,8 +95,10 @@ const { user } = useAuth();
       {loading && <div className="text-center py-4"><span className="spinner-border text-primary" /></div>}
 
       <div className="row g-3">
-        {/* Order list — unchanged */}
-        <div className={selected ? 'col-md-4' : 'col-12'}>
+        {/* Order list — reordered after the detail panel on mobile so the
+            detail panel shows first once an order is selected; on md+
+            screens the list stays on the left as before. */}
+        <div className={`${selected ? 'col-md-4 order-2 order-md-1' : 'col-12'}`}>
           {orders.map(o => (
             <div
               key={o.order_ID}
@@ -142,19 +149,50 @@ const { user } = useAuth();
 
         {/* ── Detail panel ── */}
         {selected && (
-          <div className="col-md-8">
+          <div className="col-md-8 order-1 order-md-2" id="confirm-order-detail">
             <div className="card">
-              <div className="card-header d-flex justify-content-between align-items-center">
-                <span className="fw-semibold">
+              <div className="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span className="fw-semibold d-flex align-items-center flex-wrap gap-2">
+                  {/* Mobile-only back button so the user can return to the
+                      list without scrolling down past the detail panel. */}
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-light border d-md-none"
+                    onClick={() => setSelected(null)}
+                    aria-label="Back to order list">
+                    ←
+                  </button>
                   Order {selected.order_Number || `#${selected.order_ID}`}
-                  {/* NEW: order status badge */}
+                </span>
+                {/* Status badge and close button grouped together with their
+                    own gap so the badge's rounded edge never touches ×. */}
+                <span className="d-flex align-items-center gap-2">
                   {selected.order_Status && (
-                    <span className={`badge ms-2 ${selected.is_Design_Approved ? 'bg-success' : 'bg-warning text-dark'}`}>
+                    <span className={`badge ${selected.is_Design_Approved ? 'bg-success' : 'bg-warning text-dark'}`}>
                       {selected.order_Status}
                     </span>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => setSelected(null)}
+                    aria-label="Close"
+                    style={{
+                      width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: '1px solid #e2e2e6', backgroundColor: '#fff',
+                      color: '#6c757d', cursor: 'pointer', padding: 0,
+                      transition: 'background-color .15s ease, border-color .15s ease, transform .1s ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#f1f1f4'; e.currentTarget.style.borderColor = '#d0d0d6'; e.currentTarget.style.color = '#212529'; }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#fff'; e.currentTarget.style.borderColor = '#e2e2e6'; e.currentTarget.style.color = '#6c757d'; }}
+                    onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.92)'; }}
+                    onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+                    </svg>
+                  </button>
                 </span>
-                <button className="btn-close" onClick={() => setSelected(null)} />
               </div>
               <div className="card-body">
 
@@ -311,9 +349,23 @@ const { user } = useAuth();
         No CAD image uploaded yet
       </div>
     )}
+
+   
   </div>
 
 </div>
+  {selected.reworkSpecificationList && selected.reworkSpecificationList.length>0 && (
+                  <div className="alert alert-info py-2 mb-3">
+                    <div className="small fw-semibold mb-1">Rework Specification:</div>
+                    
+      {selected.reworkSpecificationList.map((spec, index) => (
+        <div className="small mb-1" key={index}>
+          {spec}
+        </div>
+      ))}
+
+                  </div>
+                )}
 {/* NEW: Designer estimates */}
                 {(selected.designer_Weight || selected.designer_Diamond_Weight || selected.designer_NoOf_Diamonds) && (
                   <div className="mb-3 p-3 rounded border" style={{ background: '#fff8f0' }}>
@@ -338,7 +390,7 @@ const { user } = useAuth();
                 <div className="border rounded p-3">
                   <div className="fw-semibold mb-3">Your Decision</div>
 
-                  <div className="d-flex gap-3 mb-3">
+                  <div className="d-flex flex-column flex-md-row gap-3 mb-3">
                     <div
                       className={`flex-fill p-3 rounded border text-center ${action === 'confirm' ? 'border-success bg-success bg-opacity-10' : ''}`}
                       style={{ cursor: 'pointer' }}

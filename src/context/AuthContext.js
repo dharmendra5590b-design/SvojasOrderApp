@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   const login = async (mobileNumber, password) => {
-    const { data:user } = await api.post('https://api.jewelquote.in/api/Login/ValidateUser', { UserName:mobileNumber, Password:password });
+    const { data:user } = await api.post('http://localhost:8081/api/Login/ValidateUser', { UserName:mobileNumber, Password:password });
     if(user.statusCode==1)
     {
     localStorage.setItem('token', user.data.token);

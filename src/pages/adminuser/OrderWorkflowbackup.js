@@ -29,21 +29,21 @@ const OrderWorkflow = () => {
 
   const load = useCallback(async () => {
     try {
-      let URL='https://api.jewelquote.in/api/order/GetReworkOrder'
+      let URL='http://localhost:8081/api/order/GetReworkOrder'
       if (status === 'design_pending') {
-        URL='https://api.jewelquote.in/api/order/GetPendingDesingOrder'
+        URL='http://localhost:8081/api/order/GetPendingDesingOrder'
       }
       else if (status === 'design_uploaded') {
-        URL='https://api.jewelquote.in/api/order/GetDesignUploadOrder'
+        URL='http://localhost:8081/api/order/GetDesignUploadOrder'
       }
       else if (status === 'customer_pending') {
-        URL='https://api.jewelquote.in/api/order/GetPendingOrderConfirmation'
+        URL='http://localhost:8081/api/order/GetPendingOrderConfirmation'
       }
       else if (status === 'customer_confirmed') {
-        URL='https://api.jewelquote.in/api/order/GetConfirmedOrder'
+        URL='http://localhost:8081/api/order/GetConfirmedOrder'
       }
       else if (status === 'under_processing') {
-        URL='https://api.jewelquote.in/api/order/GetUnderProductionOrder'
+        URL='http://localhost:8081/api/order/GetUnderProductionOrder'
       }
      
         const { data } = await api.get(URL);

@@ -13,7 +13,7 @@ const LedgerEntry = () => {
   const loadAll = async () => {
     try {
       const [cust] = await Promise.all([
-        api.post('https://api.jewelquote.in/api/customer/getcustomer',{customer_ID:0,mode:'L'})
+        api.post('http://localhost:8081/api/customer/getcustomer',{customer_ID:0,mode:'L'})
       ]);
      setCustomers(cust.data.data);
     } catch {}
@@ -36,7 +36,7 @@ const LedgerEntry = () => {
     if (!validate()) return;
     setLoading(true);
     try {
-   const {data}=   await api.post('https://api.jewelquote.in/api/customer/SaveCustomerLedgerCredit', form);
+   const {data}=   await api.post('http://localhost:8081/api/customer/SaveCustomerLedgerCredit', form);
       if(data.statusCode===1)
             {   
            toast.success(data?.message);

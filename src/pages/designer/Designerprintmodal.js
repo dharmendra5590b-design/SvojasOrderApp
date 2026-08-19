@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
-const BASE_URL = 'https://api.jewelquote.in';
+const BASE_URL = 'http://localhost:8081';
 
 // Image fields come back as relative paths (e.g. "uploads/xyz.jpg"), not full URLs.
 const resolveImageUrl = (path) => {

@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
-const BASE_URL = 'https://api.jewelquote.in';
+const BASE_URL = 'http://localhost:8081';
 const imgUrl = (fn) => fn ? `${BASE_URL}/${fn}` : null;
 
 const fmt = (dateStr) => {

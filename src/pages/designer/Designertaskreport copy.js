@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Designerprintmodal from '../designer/Designerprintmodal'; 
-const BASE_URL = 'https://api.jewelquote.in';
+const BASE_URL = 'http://localhost:8081';
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
 const EMPTY_FILTERS = {
