@@ -84,8 +84,7 @@ const LedgerEntry = () => {
                     value={form.particular} onChange={e => setForm({ ...form, particular: e.target.value })} />
                   {errors.particular && <div className="invalid-feedback">{errors.particular}</div>}
                 </div>
-                <div className="row g-2 mb-3">
-                  <div className="col">
+                <div className="mb-3">
                     <label className="form-label fw-semibold">Gold Received *</label>
                     <input type="number" step="0.001" className={`form-control ${errors.goldIn ? 'is-invalid' : ''}`} placeholder="Gold Received (-999)"
                       value={form.goldIn} onChange={e => {
@@ -99,7 +98,7 @@ const LedgerEntry = () => {
  />
                       {errors.goldIn && <div className="invalid-feedback">{errors.goldIn}</div>}
                   </div>
-                  <div className="col">
+                <div className="mb-3">
                     <label className="form-label fw-semibold">Amount Received *</label>
                   <input
   type="number"
@@ -117,7 +116,6 @@ const LedgerEntry = () => {
 />
                   {errors.amountIn && <div className="invalid-feedback">{errors.amountIn}</div>}
                   </div>
-                </div>
                 <button type="submit" className="btn btn-primary w-100" disabled={loading}>
                   {loading ? 'Saving...' : 'Add Entry'}
                 </button>

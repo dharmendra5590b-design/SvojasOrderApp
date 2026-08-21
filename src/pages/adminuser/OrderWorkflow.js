@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../../services/api';
 import OrderViewModal from './OrderViewModal';
@@ -22,10 +22,68 @@ const fmt = (dateStr) => {
   return isNaN(d) ? dateStr : d.toLocaleDateString('en-IN');
 };
 
+// --- Sorting helpers ---------------------------------------------------
+
+const getComparableValue = (val) => {
+  if (val === null || val === undefined || val === '') return null;
+  if (typeof val === 'boolean') return val ? 1 : 0;
+  if (typeof val === 'number') return val;
+
+  // Try date first (covers *_DT / *_Date fields, which are strings from the API)
+  const asDate = new Date(val);
+  if (!isNaN(asDate) && /\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4}/.test(String(val))) {
+    return asDate.getTime();
+  }
+
+  // Try numeric string
+  if (typeof val === 'string' && val.trim() !== '' && !isNaN(Number(val))) {
+    return Number(val);
+  }
+
+  return String(val).toLowerCase();
+};
+
+const sortData = (data, key, direction) => {
+  if (!key) return data;
+  const sorted = [...data].sort((a, b) => {
+    const va = getComparableValue(a[key]);
+    const vb = getComparableValue(b[key]);
+
+    // Nulls/empties always sort last, regardless of direction
+    if (va === null && vb === null) return 0;
+    if (va === null) return 1;
+    if (vb === null) return -1;
+
+    if (va < vb) return direction === 'asc' ? -1 : 1;
+    if (va > vb) return direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+  return sorted;
+};
+
+const SortableTh = ({ label, sortKey, sortConfig, onSort, className = '' }) => {
+  const isActive = sortConfig.key === sortKey;
+  const arrow = isActive ? (sortConfig.direction === 'asc' ? ' ▲' : ' ▼') : ' ⇅';
+  return (
+    <th
+      className={className}
+      onClick={() => onSort(sortKey)}
+      style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
+      title={`Sort by ${label}`}
+    >
+      {label}
+      <span style={{ opacity: isActive ? 1 : 0.35, fontSize: '0.75em' }}>{arrow}</span>
+    </th>
+  );
+};
+
+// -------------------------------------------------------------------------
+
 const OrderWorkflow = () => {
   const { status } = useParams();
   const [orders, setOrders]         = useState([]);
   const [viewOrderId, setViewOrderId] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
   const load = useCallback(async () => {
     try {
@@ -54,6 +112,22 @@ const OrderWorkflow = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  // Reset sort whenever the view changes, since each status has different columns
+  useEffect(() => { setSortConfig({ key: null, direction: 'asc' }); }, [status]);
+
+  const requestSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key !== key) return { key, direction: 'asc' };
+      if (prev.direction === 'asc') return { key, direction: 'desc' };
+      return { key: null, direction: 'asc' }; // third click clears sort
+    });
+  };
+
+  const sortedOrders = useMemo(
+    () => sortData(orders, sortConfig.key, sortConfig.direction),
+    [orders, sortConfig]
+  );
+
   const renderBody = () => {
     switch (status) {
       case 'pending':
@@ -61,20 +135,20 @@ const OrderWorkflow = () => {
           <table className="table table-hover mb-0">
             <thead className="table-light">
               <tr>
-                <th>Order #</th>
-                <th>Order Type</th>
-                <th>Customer</th>
-                <th>Date</th>
-                <th>Design</th>
-                <th>Quantity</th>
-                <th>Expected Delivery Date</th>
+                <SortableTh label="Order #" sortKey="order_Number" sortConfig={sortConfig} onSort={requestSort} />
+                <SortableTh label="Order Type" sortKey="order_Type" sortConfig={sortConfig} onSort={requestSort} />
+                <SortableTh label="Customer" sortKey="customer_Name" sortConfig={sortConfig} onSort={requestSort} />
+                <SortableTh label="Date" sortKey="order_Date" sortConfig={sortConfig} onSort={requestSort} />
+                <SortableTh label="Design" sortKey="design" sortConfig={sortConfig} onSort={requestSort} />
+                <SortableTh label="Quantity" sortKey="quantity" sortConfig={sortConfig} onSort={requestSort} />
+                <SortableTh label="Expected Delivery Date" sortKey="delivery_Date" sortConfig={sortConfig} onSort={requestSort} />
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {orders.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-4 text-muted">No orders</td></tr>
-              ) : orders.map(o => (
+              {sortedOrders.length === 0 ? (
+                <tr><td colSpan={8} className="text-center py-4 text-muted">No orders</td></tr>
+              ) : sortedOrders.map(o => (
                 <tr key={o.order_ID}>
                   <td><strong>{o.order_Number}</strong></td>
                   <td>{o.order_Type}</td>
@@ -102,29 +176,29 @@ const OrderWorkflow = () => {
   <table className="table table-hover mb-0">
     <thead className="table-light">
       <tr>
-        <th>Order #</th>
-        <th>Customer</th>
-        <th>Order Type</th>
-        <th>Order Date</th>
-        <th>Design</th>
-        <th>Quantity</th>
-        <th>Designer</th>
-        <th>Assigned Date</th>
-        <th>Expected Date</th>
-        <th>Expected Delivery Date</th>
-        <th>Priority</th>
+        <SortableTh label="Order #" sortKey="order_Number" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Customer" sortKey="customer_Name" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Order Type" sortKey="order_Type" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Order Date" sortKey="order_Date" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Design" sortKey="design" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Quantity" sortKey="quantity" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Designer" sortKey="designer_Name" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Assigned Date" sortKey="designer_Assgined_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Expected Date" sortKey="design_Expected_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Expected Delivery Date" sortKey="delivery_Date" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Priority" sortKey="is_High_Priority" sortConfig={sortConfig} onSort={requestSort} />
         <th></th>
       </tr>
     </thead>
     <tbody>
-      {orders.length === 0 ? (
+      {sortedOrders.length === 0 ? (
         <tr>
           <td colSpan={12} className="text-center py-4 text-muted">
             No orders
           </td>
         </tr>
       ) : (
-        orders.map((o) => (
+        sortedOrders.map((o) => (
           <tr key={o.order_ID}>
             <td><strong>{o.order_Number}</strong></td>
             <td>{o.customer_Name}</td>
@@ -164,29 +238,29 @@ case 'design_uploaded':
   <table className="table table-hover mb-0">
     <thead className="table-light">
       <tr>
-        <th>Order #</th>
-        <th>Customer</th>
-        <th>Order Type</th>
-        <th>Order Date</th>
-        <th>Design</th>
-        <th>Designer</th>
-        <th>Assigned Date</th>
-        <th>Expected Date</th>
-        <th>Design Upload Date</th>
-        <th>Expected Delivery Date</th>
-        <th>Priority</th>
+        <SortableTh label="Order #" sortKey="order_Number" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Customer" sortKey="customer_Name" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Order Type" sortKey="order_Type" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Order Date" sortKey="order_Date" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Design" sortKey="design" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Designer" sortKey="designer_Name" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Assigned Date" sortKey="designer_Assgined_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Expected Date" sortKey="design_Expected_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Design Upload Date" sortKey="design_Upload_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Expected Delivery Date" sortKey="delivery_Date" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Priority" sortKey="is_High_Priority" sortConfig={sortConfig} onSort={requestSort} />
         <th></th>
       </tr>
     </thead>
     <tbody>
-      {orders.length === 0 ? (
+      {sortedOrders.length === 0 ? (
         <tr>
           <td colSpan={13} className="text-center py-4 text-muted">
             No orders
           </td>
         </tr>
       ) : (
-        orders.map((o) => (
+        sortedOrders.map((o) => (
           <tr key={o.order_ID}>
             <td>
               <strong>{o.order_Number}</strong>
@@ -228,32 +302,31 @@ case 'design_uploaded':
   <table className="table table-hover mb-0">
     <thead className="table-light">
       <tr>
-       
-        <th>Order#</th>
-        <th>Order Date</th>
-        <th>Customer Name</th>
-        <th>Order Type</th>
-        <th>Design</th>
-        <th>Quantity</th>
-        <th>Designer</th>
-        <th>Assigned Date</th>
-        <th>Design Upload Date</th>
-        <th>Design Approved Date</th>
-        <th>Expected Delivery Date</th>
-        <th>Priority</th>
+        <SortableTh label="Order#" sortKey="order_Number" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Order Date" sortKey="order_Date" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Customer Name" sortKey="customer_Name" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Order Type" sortKey="order_Type" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Design" sortKey="design" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Quantity" sortKey="quantity" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Designer" sortKey="designer_Name" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Assigned Date" sortKey="designer_Assgined_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Design Upload Date" sortKey="design_Upload_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Design Approved Date" sortKey="design_Approved_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Expected Delivery Date" sortKey="delivery_Date" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Priority" sortKey="is_High_Priority" sortConfig={sortConfig} onSort={requestSort} />
         <th></th>
       </tr>
     </thead>
 
     <tbody>
-      {orders.length === 0 ? (
+      {sortedOrders.length === 0 ? (
         <tr>
           <td colSpan={14} className="text-center py-4 text-muted">
             No orders found
           </td>
         </tr>
       ) : (
-        orders.map((o) => (
+        sortedOrders.map((o) => (
           <tr key={o.order_ID}>
             <td className="fw-bold">{o.order_Number}</td>
             <td>{fmt(o.order_Date)}</td>
@@ -294,32 +367,33 @@ case 'design_uploaded':
   <table className="table table-hover mb-0">
     <thead className="table-light">
       <tr>
-       
-        <th>Order#</th>
-        <th>Order Date</th>
-        <th>Customer Name</th>
-        <th>Order Type</th>
-        <th>Design</th>
-        <th>Quantity</th>
-        <th>Designer</th>
-        <th>Assigned Date</th>
-        <th>Design Upload Date</th>
-        <th>Design Approved Date</th>
-        <th>Order Confirmed Date</th>
-        <th>Priority</th>
+        <SortableTh label="Order#" sortKey="order_Number" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Order Date" sortKey="order_Date" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Customer Name" sortKey="customer_Name" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Order Type" sortKey="order_Type" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Design" sortKey="design" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Quantity" sortKey="quantity" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Designer" sortKey="designer_Name" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Assigned Date" sortKey="designer_Assgined_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Design Upload Date" sortKey="design_Upload_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Design Approved Date" sortKey="design_Approved_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Order Confirmed Date" sortKey="order_Confirmed_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Expected Delivery Date" sortKey="delivery_Date " sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Committed Date" sortKey="committed_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Priority" sortKey="is_High_Priority" sortConfig={sortConfig} onSort={requestSort} />
         <th></th>
       </tr>
     </thead>
 
     <tbody>
-      {orders.length === 0 ? (
+      {sortedOrders.length === 0 ? (
         <tr>
           <td colSpan={14} className="text-center py-4 text-muted">
             No orders found
           </td>
         </tr>
       ) : (
-        orders.map((o) => (
+        sortedOrders.map((o) => (
           <tr key={o.order_ID}>
             <td className="fw-bold">{o.order_Number}</td>
             <td>{fmt(o.order_Date)}</td>
@@ -332,6 +406,8 @@ case 'design_uploaded':
             <td>{fmt(o.design_Upload_DT)}</td>
             <td>{fmt(o.design_Approved_DT)}</td>
             <td>{fmt(o.order_Confirmed_DT)}</td>
+            <td>{fmt(o.delivery_Date)}</td>
+            <td>{fmt(o.committed_DT)}</td>
             <td>
               {o.is_High_Priority ? (
                 <span className="badge bg-danger">High</span>
@@ -360,33 +436,34 @@ case 'design_uploaded':
   <table className="table table-hover mb-0">
     <thead className="table-light">
       <tr>
-       
-        <th>Order#</th>
-        <th>Order Date</th>
-        <th>Customer Name</th>
-        <th>Order Type</th>
-        <th>Design</th>
-        <th>Quantity</th>
-        <th>Designer</th>
-        <th>Assigned Date</th>
-        <th>Design Upload Date</th>
-        <th>Design Approved Date</th>
-        <th>Order Confirmed Date</th>
-        <th>Production Assigned Date</th>
-        <th>Priority</th>
+        <SortableTh label="Order#" sortKey="order_Number" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Order Date" sortKey="order_Date" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Customer Name" sortKey="customer_Name" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Order Type" sortKey="order_Type" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Design" sortKey="design" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Quantity" sortKey="quantity" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Designer" sortKey="designer_Name" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Assigned Date" sortKey="designer_Assgined_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Design Upload Date" sortKey="design_Upload_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Design Approved Date" sortKey="design_Approved_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Order Confirmed Date" sortKey="order_Confirmed_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Production Assigned Date" sortKey="production_Assigned_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Expected Delivery Date" sortKey="delivery_Date " sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Committed Date" sortKey="committed_DT" sortConfig={sortConfig} onSort={requestSort} />
+        <SortableTh label="Priority" sortKey="is_High_Priority" sortConfig={sortConfig} onSort={requestSort} />
         <th></th>
       </tr>
     </thead>
 
     <tbody>
-      {orders.length === 0 ? (
+      {sortedOrders.length === 0 ? (
         <tr>
           <td colSpan={14} className="text-center py-4 text-muted">
             No orders found
           </td>
         </tr>
       ) : (
-        orders.map((o) => (
+        sortedOrders.map((o) => (
           <tr key={o.order_ID}>
             <td className="fw-bold">{o.order_Number}</td>
             <td>{fmt(o.order_Date)}</td>
@@ -400,6 +477,8 @@ case 'design_uploaded':
             <td>{fmt(o.design_Approved_DT)}</td>
             <td>{fmt(o.order_Confirmed_DT)}</td>
             <td>{fmt(o.production_Assigned_DT)}</td>
+            <td>{fmt(o.delivery_Date)}</td>
+            <td>{fmt(o.committed_DT)}</td>
             <td>
               {o.is_High_Priority ? (
                 <span className="badge bg-danger">High</span>
