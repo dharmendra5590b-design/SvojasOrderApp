@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
-const BASE_URL = 'http://localhost:8081';
+const BASE_URL = 'https://api.jewelquote.in';
 const imgUrl = (fn) => fn ? `${BASE_URL}/${fn}` : null;
 
 const fmt = (dateStr) => {
@@ -485,41 +485,75 @@ if(order.order_Status==='Assigned To Designer')
       );
 }
     /* Step 2 — Design Uploaded */
+        /* Step 2 — Design Uploaded */
     if (order.order_Status === 'Design Uploaded') {
+      const isCustomerRework = order.order_Type === 'Customer Rework';
+
       return (
         <div className="card border-0 bg-light mt-2">
           <div className="card-body">
-            <SectionLabel>Review CAD Design</SectionLabel>
-            <div className="row g-2 mb-3">
-              <div className="col-md-4">
-                <label className="form-label small fw-semibold">Designer Weight</label>
-                <input type="text" step="0.01" className="form-control form-control-sm"
-                  value={actionForm.designer_Weight || ''}
-                  onChange={e => setActionForm({ ...actionForm, designer_Weight: e.target.value })} />
-              </div>
-              <div className="col-md-4">
-                <label className="form-label small fw-semibold">Diamond Weight</label>
-                <input type="text" step="0.001" className="form-control form-control-sm"
-                  value={actionForm.designer_Diamond_Weight || ''}
-                  onChange={e => setActionForm({ ...actionForm, designer_Diamond_Weight: e.target.value })} />
-              </div>
-              <div className="col-md-4">
-                <label className="form-label small fw-semibold">No. of Diamonds</label>
-                <input type="text" className="form-control form-control-sm"
-                  value={actionForm.designer_NoOf_Diamonds || ''}
-                  onChange={e => setActionForm({ ...actionForm, designer_NoOf_Diamonds: e.target.value })} />
-              </div>
-              <div className="col-12 d-flex align-items-center gap-2">
-                <input type="checkbox" className="form-check-input" id="skipDiamond"
-                  checked={!!actionForm.skipDiamond}
-                  onChange={e => setActionForm({ ...actionForm, skipDiamond: e.target.checked })} />
-                <label className="form-check-label small" htmlFor="skipDiamond">No Diamonds in this design</label>
-              </div>
-            </div>
+            {isCustomerRework ? (
+              <>
+                <SectionLabel>Rework Specification</SectionLabel>
+                {order.reworkSpecificationList?.length ? (
+                  <ul className="list-unstyled mb-3">
+                    {order.reworkSpecificationList.map((entry, idx) => {
+                      const [datePart, ...rest] = entry.split('==>');
+                      const note = rest.join('==>').trim();
+                      return (
+                        <li key={idx} className="alert alert-warning py-2 mb-2">
+                          <small>
+                            <strong>{datePart.trim()}</strong> — {note || entry}
+                          </small>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <div className="alert alert-warning py-2 mb-3">
+                    <small>No rework specification provided.</small>
+                  </div>
+                )}
+              </>
+
+            ) : (
+              <>
+                <SectionLabel>Review CAD Design</SectionLabel>
+                <div className="row g-2 mb-3">
+                  <div className="col-md-4">
+                    <label className="form-label small fw-semibold">Designer Weight</label>
+                    <input type="text" step="0.01" className="form-control form-control-sm"
+                      value={actionForm.designer_Weight || ''}
+                      onChange={e => setActionForm({ ...actionForm, designer_Weight: e.target.value })} />
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label small fw-semibold">Diamond Weight</label>
+                    <input type="text" step="0.001" className="form-control form-control-sm"
+                      value={actionForm.designer_Diamond_Weight || ''}
+                      onChange={e => setActionForm({ ...actionForm, designer_Diamond_Weight: e.target.value })} />
+                  </div>
+                  <div className="col-md-4">
+                    <label className="form-label small fw-semibold">No. of Diamonds</label>
+                    <input type="text" className="form-control form-control-sm"
+                      value={actionForm.designer_NoOf_Diamonds || ''}
+                      onChange={e => setActionForm({ ...actionForm, designer_NoOf_Diamonds: e.target.value })} />
+                  </div>
+                  <div className="col-12 d-flex align-items-center gap-2">
+                    <input type="checkbox" className="form-check-input" id="skipDiamond"
+                      checked={!!actionForm.skipDiamond}
+                      onChange={e => setActionForm({ ...actionForm, skipDiamond: e.target.checked })} />
+                    <label className="form-check-label small" htmlFor="skipDiamond">No Diamonds in this design</label>
+                  </div>
+                </div>
+              </>
+            )}
+
             <div className="d-flex gap-2 flex-wrap">
-              <button className="btn btn-sm btn-success" onClick={confirmDesign} disabled={actionLoading}>
-                {actionLoading ? <span className="spinner-border spinner-border-sm me-1" /> : '✅ '} Confirm Design
-              </button>
+              {!isCustomerRework && (
+                <button className="btn btn-sm btn-success" onClick={confirmDesign} disabled={actionLoading}>
+                  {actionLoading ? <span className="spinner-border spinner-border-sm me-1" /> : '✅ '} Confirm Design
+                </button>
+              )}
               <button className="btn btn-sm btn-warning" onClick={() => setRedesignModal(true)} disabled={actionLoading}>
                 🔄 Request Redesign
               </button>

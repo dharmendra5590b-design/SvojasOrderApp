@@ -39,7 +39,7 @@ const [currentPage, setCurrentPage] = useState(1);
   const [pageSize,    setPageSize]    = useState(10);
   const [viewOrderId, setViewOrderId] = useState(null);
   const [printOrderId, setPrintOrderId] = useState(null);
-  useEffect(() => { api.post('http://localhost:8081/api/customer/getcustomer',{customer_ID:0,mode:'L'}).then(r => setCustomers(r.data.data)).catch(() => {}); }, []);
+  useEffect(() => { api.post('https://api.jewelquote.in/api/customer/getcustomer',{customer_ID:0,mode:'L'}).then(r => setCustomers(r.data.data)).catch(() => {}); }, []);
 
   const load = async () => {
     setLoading(true);
@@ -52,7 +52,7 @@ const [currentPage, setCurrentPage] = useState(1);
   };
 
 
-      const { data } = await api.post('http://localhost:8081/api/order/GetGridOrder', payload);
+      const { data } = await api.post('https://api.jewelquote.in/api/order/GetGridOrder', payload);
       setOrders(data);
     } catch {} finally { setLoading(false); }
   };

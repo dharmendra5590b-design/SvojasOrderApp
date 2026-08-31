@@ -14,7 +14,7 @@ const EmployeeMaster = () => {
   const [loading, setLoading] = useState(false);
 const [showPassword, setShowPassword] = useState({});
   const load = async () => {
-    try { const { data:emp } = await api.post('http://localhost:8081/api/customer/getemployee',{employee_ID:0,mode:'S'}); 
+    try { const { data:emp } = await api.post('https://api.jewelquote.in/api/customer/getemployee',{employee_ID:0,mode:'S'}); 
     setEmployees(emp.data); } catch {}
   };
   useEffect(() => { load(); }, []);
@@ -35,7 +35,7 @@ const [showPassword, setShowPassword] = useState({});
     setLoading(true);
     try {
       if (editId) {
-      const {data}=  await api.post(`http://localhost:8081/api/customer/saveemployee`, form);
+      const {data}=  await api.post(`https://api.jewelquote.in/api/customer/saveemployee`, form);
          if(data.statusCode===1)
           {   
          toast.success('Employee updated');
@@ -46,7 +46,7 @@ const [showPassword, setShowPassword] = useState({});
             return false;
           }
       } else {
-       const {data}= await api.post('http://localhost:8081/api/customer/saveemployee', form);
+       const {data}= await api.post('https://api.jewelquote.in/api/customer/saveemployee', form);
          if(data.statusCode===1)
           {   
          toast.success('Employee Created');
@@ -129,7 +129,7 @@ const [showPassword, setShowPassword] = useState({});
                       }}><i className="bi bi-pencil"></i></button>
                       <button className="btn btn-sm btn-outline-danger" onClick={async () => {
                         if (!window.confirm('Delete employee?')) return;
-                        try {const {data}= await api.post(`http://localhost:8081/api/customer/saveemployee`,{employee_ID:e.employee_ID,mode:'D'}); toast.success(data?.message); load(); }
+                        try {const {data}= await api.post(`https://api.jewelquote.in/api/customer/saveemployee`,{employee_ID:e.employee_ID,mode:'D'}); toast.success(data?.message); load(); }
                         catch { toast.error('Error'); }
                       }}><i className="bi bi-trash"></i></button>
                     </td>

@@ -38,7 +38,7 @@ const [quality, setQuality] = useState([]);
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
   const load = async () => {
-    try { const { data:order } = await api.get('http://localhost:8081/api/order/GetListCustomerOrder',{employee_ID:0}); 
+    try { const { data:order } = await api.get('https://api.jewelquote.in/api/order/GetListCustomerOrder',{employee_ID:0}); 
     setDesigns(order.design); 
     setKts(order.karat);
     setTypes(order.designType);
@@ -81,7 +81,7 @@ const [quality, setQuality] = useState([]);
       // customerId will be resolved in backend via logged-in user
       Object.entries(images).forEach(([k, v]) => { if (v) fd.append(k, v); });
       fd.append("customer_ID",user.entity_ID)
-    const {data} = await api.post('http://localhost:8081/api/order/SaveOrder', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+    const {data} = await api.post('https://api.jewelquote.in/api/order/SaveOrder', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
      if(data.statusCode===1)
            {   
           toast.success('Order placed successfully');
