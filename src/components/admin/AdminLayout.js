@@ -11,6 +11,9 @@ const menuConfig = {
     { to: '/admin/ledger', icon: 'bi-journal-text', label: 'Ledger Entry' },
     { to: '/admin/order-report', icon: 'bi-file-earmark-bar-graph', label: 'Order Report' },
     { to: '/admin/ledger-report', icon: 'bi-file-earmark-spreadsheet', label: 'Ledger Report' },
+    { to: '/admin/customer-wise-sales-report', icon: 'bi-person-lines-fill', label: 'Customer Sales Report' },
+    { to: '/admin/customer-wise-outstanding-report', icon: 'bi-cash-stack', label: 'Outstanding Report' },
+    { to: '/admin/article-wise-sales-report', icon: 'bi-bar-chart-line', label: 'Article Sales Report' },
   ],
   ADMINUSER: [
     { to: '/adminuser/dashboard', icon: 'bi-grid-1x2', label: 'Dashboard' },

@@ -20,6 +20,9 @@ import CustomerMapping from './pages/admin/CustomerMapping';
 import LedgerEntry from './pages/admin/LedgerEntry';
 import CustomerOrderReport from './pages/admin/CustomerOrderReport';
 import CustomerLedgerReport from './pages/admin/CustomerLedgerReport';
+import CustomerwiseSalesReport from './pages/admin/CustomerwiseSalesReport';
+import CustomerOutstandingReport from './pages/admin/CustomerOutstandingReport'
+import ArticlewiseDesignReport from './pages/admin/ArticlewiseDesignReport'
 
 // Admin User
 import AdminUserLayout from './components/admin/AdminLayout';
@@ -82,6 +85,9 @@ function App() {
             <Route path="ledger" element={<LedgerEntry />} />
             <Route path="order-report" element={<CustomerOrderReport />} />
             <Route path="ledger-report" element={<CustomerLedgerReport />} />
+            <Route path='customer-wise-sales-report' element={<CustomerwiseSalesReport/>}/>
+            <Route path='customer-wise-outstanding-report' element={<CustomerOutstandingReport/>}/>
+            <Route path='article-wise-sales-report' element={<ArticlewiseDesignReport/>}/>
           </Route>
 
           {/* ADMIN USER */}
