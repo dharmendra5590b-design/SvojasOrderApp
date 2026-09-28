@@ -333,10 +333,10 @@ const CustomerLedgerReport = () => {
                               {renderTaggedCell(e.goldIn)}
                               {renderTaggedCell(e.amountOut)}
                               {renderTaggedCell(e.amountIn)}*/}
-                              {e.goldOut}
-                              {e.goldIn}
-                              {e.amountOut}
-                              {e.amountIn}
+                             <td>{e.goldOut}</td>
+                              <td>{e.goldIn}</td>
+                              <td>{e.amountOut}</td>
+                              <td>{e.amountIn}</td>
                             </tr>
                           );
                         }
