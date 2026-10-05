@@ -25,18 +25,178 @@ const decimalFields = [
   'final_Net_Weight',
   'gold24ktWeight',
   'labour_Charge',
+  'labour_Per_Grm',
+  'labour_Per_Qty',
   'gold_Loss',
+  'gold_Loss_Percent',
+  'gold_Loss_Per_Qty',
   'gold_Loss_24kt',
   'billAmount',
-    "production_KT",
-  "diamond_Value",
-  "colour_Stone_Value",
-  "other_Colour_Stone_Value",
-  "final_Net_Weight_24kt",
-  "certificate_Charge",
-  "other_Charges",
-
+  'production_KT',
+  'diamond_Value',
+  'colour_Stone_Value',
+  'other_Colour_Stone_Value',
+  'final_Net_Weight_24kt',
+  'certificate_Charge',
+  'other_Charges',
+  'production_KT_Per',
 ];
+
+const defaultActionForm = {
+  production_KT: 0,
+
+  final_Gross_Weight: 0,
+  final_Noof_Diamonds: 0,
+  final_Diamond_Weight: 0,
+  diamond_Value: 0,
+
+  noOfColour_Stone: 0,
+  colourStone_Weight: 0,
+  colour_Stone_Value: 0,
+
+  other_NoofColour_Stone: 0,
+  other_ColourStone_Weight: 0,
+  other_Colour_Stone_Value: 0,
+
+  final_Net_Weight: 0,
+  final_Net_Weight_24kt: 0,
+
+  labour_Charge: 0,
+  labour_Per_Grm: 0,
+  labour_Per_Qty: 0,
+
+  gold_Loss: 0,
+  gold_Loss_Percent: 0,
+  gold_Loss_Per_Qty: 0,
+
+  gold_Loss_24kt: 0,
+
+  certificate_Charge: 0,
+  other_Charges: 0,
+
+  billAmount: 0,
+  gold24ktWeight: 0,
+  production_KT_Per: 0,
+};
+
+/* ── Stone detail config (drives the 3 popups) ── */
+const num = (v) => parseFloat(v) || 0;
+
+const STONE_CONFIG = {
+  diamond: {
+    title: 'Diamond Details',
+    valueKey: 'diamond_Value',
+    pcsKey: 'final_Noof_Diamonds',
+    wtKey: 'final_Diamond_Weight',
+    pcsField: 'pcs',
+    wtField: 'wt',
+    cols: [
+      { key: 'stone_Name',  label: 'Stone Name',  type: 'text' },
+      { key: 'pcs',         label: 'DIA PCS',     type: 'int' },
+      { key: 'wt',          label: 'DIA WT',      type: 'dec' },
+      { key: 'per_Ct_Val',  label: 'PER CT VAL',  type: 'dec' },
+      { key: 'per_Pcs_Val', label: 'Per PCS VAL', type: 'dec' },
+      { key: 'value',       label: 'DIA VAL',     type: 'dec', readonly: true },
+    ],
+    // Either PER CT VAL or Per PCS VAL is used, not both:
+    // if PER CT VAL is entered  -> DIA VAL = DIA WT * PER CT VAL
+    // else if Per PCS VAL is entered -> DIA VAL = Per PCS VAL * DIA PCS
+    calc: (r) => {
+      if (num(r.per_Ct_Val) > 0) return num(r.wt) * num(r.per_Ct_Val);
+      if (num(r.per_Pcs_Val) > 0) return num(r.per_Pcs_Val) * num(r.pcs);
+      return 0;
+    },
+  },
+  colour: {
+    title: 'Colour Stone Details',
+    valueKey: 'colour_Stone_Value',
+    pcsKey: 'noOfColour_Stone',
+    wtKey: 'colourStone_Weight',
+    pcsField: 'pcs',
+    wtField: 'wt',
+    cols: [
+      { key: 'stone_Name', label: 'COLSTN Name', type: 'text' },
+      { key: 'pcs',        label: 'COLSTN PCS',  type: 'int' },
+      { key: 'wt',         label: 'COLST WT',    type: 'dec' },
+      { key: 'per_Ct',     label: 'PER CT',      type: 'dec' },
+      { key: 'value',      label: 'VALUE',       type: 'dec', readonly: true },
+    ],
+    calc: (r) => num(r.wt) * num(r.per_Ct),
+  },
+  other: {
+    title: 'Other Stone Details',
+    valueKey: 'other_Colour_Stone_Value',
+    pcsKey: 'other_NoofColour_Stone',
+    wtKey: 'other_ColourStone_Weight',
+    pcsField: 'pcs',
+    wtField: 'wt_Gr',
+    cols: [
+      { key: 'stone_Name', label: 'OTHER ST',  type: 'text' },
+      { key: 'pcs',        label: 'PCS',       type: 'int' },
+      { key: 'wt_Gr',      label: 'WT IN GR',  type: 'dec' },
+      { key: 'per_Gr',     label: 'PER GR',    type: 'dec' },
+      { key: 'value',      label: 'VALUE',     type: 'dec', readonly: true },
+    ],
+    calc: (r) => num(r.wt_Gr) * num(r.per_Gr),
+  },
+};
+
+const escapeXml = (str) =>
+  String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+
+/* ── Build the 3 XML payloads expected by the OrderComplete SP ── */
+const buildDiamondXml = (rows) => {
+  const clean = rows.filter((r) => (r.stone_Name || '').trim() || num(r.pcs) || num(r.wt) || num(r.value));
+  if (!clean.length) return null;
+  const items = clean.map((r) => `    <Item>
+        <Stone_Name>${escapeXml(r.stone_Name)}</Stone_Name>
+        <Qty>${num(r.pcs)}</Qty>
+        <Stone_Weight>${num(r.wt).toFixed(3)}</Stone_Weight>
+        <Per_Weight_Value>${num(r.per_Ct_Val).toFixed(2)}</Per_Weight_Value>
+        <Per_Qty_Value>${num(r.per_Pcs_Val).toFixed(2)}</Per_Qty_Value>
+        <Stone_Value>${num(r.value).toFixed(2)}</Stone_Value>
+    </Item>`).join('\n');
+  return `<Diamonds>\n${items}\n</Diamonds>`;
+};
+
+const buildClrStnXml = (rows) => {
+  const clean = rows.filter((r) => (r.stone_Name || '').trim() || num(r.pcs) || num(r.wt) || num(r.value));
+  if (!clean.length) return null;
+  const items = clean.map((r) => `    <Item>
+        <Stone_Name>${escapeXml(r.stone_Name)}</Stone_Name>
+        <Qty>${num(r.pcs)}</Qty>
+        <Stone_Weight>${num(r.wt).toFixed(3)}</Stone_Weight>
+        <Per_Weight_Value>${num(r.per_Ct).toFixed(2)}</Per_Weight_Value>
+        <Stone_Value>${num(r.value).toFixed(2)}</Stone_Value>
+    </Item>`).join('\n');
+  return `<CLRSTN>\n${items}\n</CLRSTN>`;
+};
+
+const buildOtherStnXml = (rows) => {
+  const clean = rows.filter((r) => (r.stone_Name || '').trim() || num(r.pcs) || num(r.wt_Gr) || num(r.value));
+  if (!clean.length) return null;
+  const items = clean.map((r) => `    <Item>
+        <Stone_Name>${escapeXml(r.stone_Name)}</Stone_Name>
+        <Qty>${num(r.pcs)}</Qty>
+        <Stone_Weight>${num(r.wt_Gr).toFixed(3)}</Stone_Weight>
+        <Per_Weight_Value>${num(r.per_Gr).toFixed(2)}</Per_Weight_Value>
+        <Stone_Value>${num(r.value).toFixed(2)}</Stone_Value>
+    </Item>`).join('\n');
+  return `<OTHERSTN>\n${items}\n</OTHERSTN>`;
+};
+
+const emptyRow = (type) => {
+  const row = {};
+  STONE_CONFIG[type].cols.forEach((c) => {
+    row[c.key] = c.type === 'text' ? '' : (c.readonly ? '0.000' : '');
+  });
+  return row;
+};
 
 /* ── Sub-components ── */
 const InfoRow = ({ label, value }) => (
@@ -50,7 +210,7 @@ const SectionLabel = ({ children }) => (
   <div style={{
     fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em',
     color: '#6c757d', fontWeight: 'bold', marginBottom: 10, paddingBottom: 6,
-    borderBottom: '1px solid #e9ecef',marginTop:10
+    borderBottom: '1px solid #e9ecef', marginTop: 10
   }}>
     {children}
   </div>
@@ -80,6 +240,117 @@ const Badge = ({ order }) => {
   );
 };
 
+/* ── Stone popup (defined OUTSIDE the main component so inputs keep focus) ── */
+const StoneModal = ({ type, initialRows, onSave, onClose }) => {
+  const cfg = STONE_CONFIG[type];
+  const [rows, setRows] = useState(initialRows?.length ? initialRows : [emptyRow(type)]);
+
+  const updateCell = (idx, col, value) => {
+    if (col.type === 'int' && !/^\d*$/.test(value)) return;
+    if (col.type === 'dec' && !/^\d*\.?\d{0,3}$/.test(value)) return;
+    setRows((prev) => prev.map((r, i) => {
+      if (i !== idx) return r;
+      const next = { ...r, [col.key]: value };
+      // Diamond rows: PER CT VAL and Per PCS VAL are mutually exclusive —
+      // entering one clears the other so only one basis drives DIA VAL.
+      if (type === 'diamond' && col.key === 'per_Ct_Val' && num(value) > 0) {
+        next.per_Pcs_Val = '';
+      }
+      if (type === 'diamond' && col.key === 'per_Pcs_Val' && num(value) > 0) {
+        next.per_Ct_Val = '';
+      }
+      next.value = cfg.calc(next).toFixed(3);
+      return next;
+    }));
+  };
+
+  const addRow = () => setRows((prev) => [...prev, emptyRow(type)]);
+  const deleteRow = (idx) => setRows((prev) => prev.filter((_, i) => i !== idx));
+
+  const totals = {
+    pcs:   rows.reduce((s, r) => s + num(r[cfg.pcsField]), 0),
+    wt:    rows.reduce((s, r) => s + num(r[cfg.wtField]), 0),
+    value: rows.reduce((s, r) => s + num(r.value), 0),
+  };
+
+  const handleSave = () => {
+    // drop completely empty rows
+    const clean = rows.filter((r) =>
+      (r.stone_Name || '').trim() || num(r[cfg.pcsField]) || num(r[cfg.wtField]) || num(r.value)
+    );
+    onSave(type, clean, totals);
+  };
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1080 }} />
+      <div style={{
+        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        width: 'min(900px, 96vw)', maxHeight: '88vh', background: '#fff', borderRadius: 12,
+        zIndex: 1081, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.3)',
+      }}>
+        <div className="d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-light">
+          <h6 className="mb-0 fw-bold">{cfg.title}</h6>
+          <button className="btn-close" onClick={onClose} />
+        </div>
+
+        <div style={{ overflow: 'auto', padding: 16 }}>
+          <table className="table table-sm table-bordered align-middle mb-2">
+            <thead className="table-light">
+              <tr>
+                {cfg.cols.map((c) => <th key={c.key} style={{ fontSize: '0.75rem' }}>{c.label}</th>)}
+                <th style={{ width: 80, fontSize: '0.75rem' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, idx) => (
+                <tr key={idx}>
+                  {cfg.cols.map((c) => (
+                    <td key={c.key}>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        readOnly={c.readonly}
+                        inputMode={c.type === 'int' ? 'numeric' : c.type === 'dec' ? 'decimal' : 'text'}
+                        value={r[c.key] ?? ''}
+                        onChange={(e) => updateCell(idx, c, e.target.value)}
+                      />
+                    </td>
+                  ))}
+                  <td className="text-center">
+                    <button className="btn btn-sm btn-outline-danger" onClick={() => deleteRow(idx)}
+                      disabled={rows.length === 1} title="Delete row">🗑</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="table-light fw-semibold">
+                {cfg.cols.map((c) => {
+                  let content = '';
+                  if (c.key === 'stone_Name') content = 'Total';
+                  else if (c.key === cfg.pcsField) content = totals.pcs;
+                  else if (c.key === cfg.wtField) content = totals.wt.toFixed(3);
+                  else if (c.key === 'value') content = totals.value.toFixed(3);
+                  return <td key={c.key}>{content}</td>;
+                })}
+                <td />
+              </tr>
+            </tfoot>
+          </table>
+          <button className="btn btn-sm btn-outline-primary" onClick={addRow}>＋ Add Row</button>
+        </div>
+
+        <div className="d-flex justify-content-end gap-2 px-3 py-2 border-top bg-light">
+          <button className="btn btn-sm btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn btn-sm btn-success" onClick={handleSave}>Save</button>
+        </div>
+      </div>
+    </>
+  );
+};
+
 /* ── Main Component ── */
 const OrderViewModal = ({ orderId, onClose, onOrderUpdated }) => {
   const [order, setOrder]                       = useState(null);
@@ -89,10 +360,7 @@ const OrderViewModal = ({ orderId, onClose, onOrderUpdated }) => {
   const [operators, setOperators]               = useState([]);
   const [operatorSearch, setOperatorSearch]     = useState('');
   const [operatorDropOpen, setOperatorDropOpen] = useState(false);
-  const [actionForm, setActionForm]             = useState({
-
-    
-  });
+  const [actionForm, setActionForm]             = useState({});
   const [actionLoading, setActionLoading]       = useState(false);
   const [cancelModal, setCancelModal]           = useState(false);
   const [cancelReason, setCancelReason]         = useState('');
@@ -101,68 +369,89 @@ const OrderViewModal = ({ orderId, onClose, onOrderUpdated }) => {
   const [redesignSpec, setRedesignSpec]         = useState('');
   const [redesignFile, setRedesignFile]         = useState(null);
   const [redesignPreview, setRedesignPreview]   = useState(null);
+  const [stoneModal, setStoneModal]             = useState(null); // 'diamond' | 'colour' | 'other' | null
+  const [stoneRows, setStoneRows]               = useState({ diamond: [], colour: [], other: [] });
   const fileInputRef    = useRef(null);
   const operatorDropRef = useRef(null);
 
   const { user } = useAuth();
-const defaultActionForm = {
-  production_KT: 0,
 
-  final_Gross_Weight: 0,
-  final_Noof_Diamonds: 0,
-  final_Diamond_Weight: 0,
-  diamond_Value: 0,
+  /* ── Auto-calc: net weight → gold loss → 24kt values → labour → bill amount ── */
+  useEffect(() => {
+    const n = (v) => parseFloat(v) || 0;
+    const qty = n(order?.quantity);
+    const ktPer = n(actionForm.production_KT_Per);
 
-  noOfColour_Stone: 0,
-  colourStone_Weight: 0,
-  colour_Stone_Value: 0,
+    // Final Net Weight = Gross - (Diamond + Colour Stone + Other Colour Stone)
+    const finalNetWt = Math.max(
+      0,
+      n(actionForm.final_Gross_Weight) -
+        ((n(actionForm.final_Diamond_Weight) +
+          n(actionForm.colourStone_Weight))/5)-
+          n(actionForm.other_ColourStone_Weight)
+          
+    );
 
-  other_NoofColour_Stone: 0,
-  other_ColourStone_Weight: 0,
-  other_Colour_Stone_Value: 0,
+    // Final Net Weight 24kt = Final Net Weight * Production KT % / 100
+    const finalNetWt24 = (finalNetWt * ktPer) / 100;
 
-  final_Net_Weight: 0,
-  final_Net_Weight_24kt: 0,
+    // Gold Loss: either % of Final Net Weight, or flat amount per Production KT
+    let goldLoss = 0;
+    if (n(actionForm.gold_Loss_Percent) > 0) {
+      goldLoss = (n(actionForm.gold_Loss_Percent) / 100) * finalNetWt;
+    } else if (n(actionForm.gold_Loss_Per_Qty) > 0) {
+      goldLoss = (n(actionForm.gold_Loss_Per_Qty) * ktPer)/100;
+    }
 
-  labour_Charge: 0,
-  gold_Loss: 0,
-  gold_Loss_24kt: 0,
+    // 24kt Gold Loss = Gold Loss * Production KT % / 100
+    const goldLoss24 = (goldLoss * ktPer) / 100;
 
-  certificate_Charge: 0,
-  other_Charges: 0,
+    // 24kt Gold Weight = Final Net Weight (24KT) + 24kt Gold Loss
+    const gold24ktWeight = finalNetWt24 + goldLoss24;
 
-  billAmount: 0,
-  gold24ktWeight: 0,
-};
+    // Labour: per gram of Final Net Weight, or flat per Quantity
+    let labourCharge = 0;
+    if (n(actionForm.labour_Per_Grm) > 0) {
+      labourCharge = finalNetWt * n(actionForm.labour_Per_Grm);
+    } else if (n(actionForm.labour_Per_Qty) > 0) {
+      labourCharge = qty * n(actionForm.labour_Per_Qty);
+    }
 
-useEffect(() => {
-  const billAmount =
-    (parseFloat(actionForm.diamond_Value) || 0) +
-    (parseFloat(actionForm.colour_Stone_Value) || 0) +
-    (parseFloat(actionForm.other_Colour_Stone_Value) || 0) +
-    (parseFloat(actionForm.certificate_Charge) || 0) +
-    (parseFloat(actionForm.labour_Charge) || 0) +
-    (parseFloat(actionForm.other_Charges) || 0);
+    const billAmount =
+      n(actionForm.diamond_Value) +
+      n(actionForm.colour_Stone_Value) +
+      n(actionForm.other_Colour_Stone_Value) +
+      n(actionForm.certificate_Charge) +
+      labourCharge +
+      n(actionForm.other_Charges);
 
-  const gold24ktWeight =
-    (parseFloat(actionForm.final_Net_Weight_24kt) || 0) +
-    (parseFloat(actionForm.gold_Loss_24kt) || 0);
-
-  setActionForm(prev => ({
-    ...prev,
-    billAmount: billAmount.toFixed(3),
-    gold24ktWeight: gold24ktWeight.toFixed(3),
-  }));
-}, [
-  actionForm.diamond_Value,
-  actionForm.colour_Stone_Value,
-  actionForm.other_Colour_Stone_Value,
-  actionForm.certificate_Charge,
-  actionForm.labour_Charge,
-  actionForm.other_Charges,
-  actionForm.final_Net_Weight_24kt,
-  actionForm.gold_Loss_24kt,
-]);
+    setActionForm((prev) => ({
+      ...prev,
+      final_Net_Weight:      finalNetWt.toFixed(3),
+      final_Net_Weight_24kt: finalNetWt24.toFixed(3),
+      gold_Loss:             goldLoss.toFixed(3),
+      gold_Loss_24kt:        goldLoss24.toFixed(3),
+      gold24ktWeight:        gold24ktWeight.toFixed(3),
+      labour_Charge:         labourCharge.toFixed(3),
+      billAmount:            billAmount.toFixed(3),
+    }));
+  }, [
+    actionForm.final_Gross_Weight,
+    actionForm.final_Diamond_Weight,
+    actionForm.colourStone_Weight,
+    actionForm.other_ColourStone_Weight,
+    actionForm.production_KT_Per,
+    actionForm.gold_Loss_Percent,
+    actionForm.gold_Loss_Per_Qty,
+    actionForm.labour_Per_Grm,
+    actionForm.labour_Per_Qty,
+    actionForm.diamond_Value,
+    actionForm.colour_Stone_Value,
+    actionForm.other_Colour_Stone_Value,
+    actionForm.certificate_Charge,
+    actionForm.other_Charges,
+    order?.quantity,
+  ]);
 
   /* ── fetch order ── */
   const fetchOrder = useCallback(() => {
@@ -175,8 +464,10 @@ useEffect(() => {
       .finally(() => setLoading(false));
   }, [orderId]);
 
-  useEffect(() => { fetchOrder(); 
+  useEffect(() => {
+    fetchOrder();
     setActionForm(defaultActionForm);
+    setStoneRows({ diamond: [], colour: [], other: [] });
   }, [fetchOrder]);
 
   /* ── fetch designers ── */
@@ -215,10 +506,14 @@ useEffect(() => {
 
   /* ── ESC to close ── */
   useEffect(() => {
-    const h = (e) => { if (e.key === 'Escape') onClose(); };
+    const h = (e) => {
+      if (e.key !== 'Escape') return;
+      if (stoneModal) { setStoneModal(null); return; }
+      onClose();
+    };
     document.addEventListener('keydown', h);
     return () => document.removeEventListener('keydown', h);
-  }, [onClose]);
+  }, [onClose, stoneModal]);
 
   if (!orderId) return null;
 
@@ -266,6 +561,19 @@ useEffect(() => {
     clearRedesignFile();
   };
 
+  /* ── Stone popup save: writes totals back into linked fields ── */
+  const handleStoneSave = (type, rows, totals) => {
+    const cfg = STONE_CONFIG[type];
+    setStoneRows((prev) => ({ ...prev, [type]: rows }));
+    setActionForm((prev) => ({
+      ...prev,
+      [cfg.valueKey]: totals.value.toFixed(3),
+      [cfg.pcsKey]:   String(totals.pcs),
+      [cfg.wtKey]:    totals.wt.toFixed(3),
+    }));
+    setStoneModal(null);
+  };
+
   /* ── Actions ── */
   const assignDesigner = async () => {
     if (!actionForm.designerId) { toast.error('Select a designer'); return; }
@@ -277,7 +585,7 @@ useEffect(() => {
         admin_Specification: actionForm.designSpecification || '',
         is_High_Priority:    actionForm.is_High_Priority || false,
         design_Expected_DT:  actionForm.design_Expected_DT || null,
-        committed_DT:  actionForm.committed_DT || null,
+        committed_DT:        actionForm.committed_DT || null,
       });
       if (data.statusCode === 1) { toast.success('Assigned to designer'); refresh(); onClose(); }
       else { toast.error(data.message); }
@@ -322,7 +630,7 @@ useEffect(() => {
     setActionLoading(true);
     try {
       const { data } = await api.post(`${BASE_URL}/api/order/OrderAssignToProduction`, {
-        order_ID:orderId,
+        order_ID: orderId,
         data_Entry_Operater_Dtl: selectedOperatorIds.join('I'),
         production_Specification: actionForm.productionSpecification || '',
       });
@@ -333,49 +641,55 @@ useEffect(() => {
 
   const completeOrder = async () => {
     const requiredFields = [
-  { key: 'production_KT', label: 'Production KT' },
+      { key: 'production_KT', label: 'Production KT' },
 
-  { key: 'final_Gross_Weight', label: 'Final Gross Weight' },
-  { key: 'final_Net_Weight', label: 'Final Net Weight' },
-  { key: 'final_Net_Weight_24kt', label: 'Final Net Weight (24KT)' },
+      { key: 'final_Gross_Weight', label: 'Final Gross Weight' },
+      { key: 'final_Net_Weight', label: 'Final Net Weight' },
+      { key: 'final_Net_Weight_24kt', label: 'Final Net Weight (24KT)' },
 
-  { key: 'labour_Charge', label: 'Labour Charge' },
-  { key: 'gold_Loss', label: 'Gold Loss' },
-  { key: 'gold_Loss_24kt', label: '24KT Gold Loss' },
+      { key: 'labour_Charge', label: 'Labour Charge' },
+      { key: 'gold_Loss', label: 'Gold Loss' },
+      { key: 'gold_Loss_24kt', label: '24KT Gold Loss' },
 
-  { key: 'diamond_Value', label: 'Diamond Value' },
-  { key: 'colour_Stone_Value', label: 'Colour Stone Value' },
-  { key: 'other_Colour_Stone_Value', label: 'Other Colour Stone Value' },
+      { key: 'diamond_Value', label: 'Diamond Value' },
+      { key: 'colour_Stone_Value', label: 'Colour Stone Value' },
+      { key: 'other_Colour_Stone_Value', label: 'Other Colour Stone Value' },
 
-  { key: 'certificate_Charge', label: 'Certificate Charge' },
-  { key: 'other_Charges', label: 'Other Charges' },
+      { key: 'certificate_Charge', label: 'Certificate Charge' },
+      { key: 'other_Charges', label: 'Other Charges' },
 
-  { key: 'billAmount', label: 'Bill Amount' },
-  { key: 'gold24ktWeight', label: '24KT Gold Weight' },
-];
+      { key: 'billAmount', label: 'Bill Amount' },
+      { key: 'gold24ktWeight', label: '24KT Gold Weight' },
+    ];
 
-  for (const field of requiredFields) {
-    const value = actionForm[field.key];
-
-    if (value === '' || value === null || value === undefined) {
-      toast.error(`${field.label} is required`);
-      return;
+    for (const field of requiredFields) {
+      const value = actionForm[field.key];
+      if (value === '' || value === null || value === undefined) {
+        toast.error(`${field.label} is required`);
+        return;
+      }
     }
-  }
 
     setActionLoading(true);
     try {
-      actionForm["order_ID"]=orderId;
-    const {data}=  await api.post(`${BASE_URL}/api/order/OrderComplete`, actionForm);
-    if(data.statusCode===1)
-    {
-      toast.success('Order marked as completed!'); refresh();
-      onClose();
-    }
-    else
-    {
-      toast.error(data?.message);
-    }
+      const payload = {
+        ...actionForm,
+        order_ID: orderId,
+        gold_Loss_Percent: actionForm.gold_Loss_Percent===""?0:actionForm.gold_Loss_Percent,
+        gold_Loss_Per_Qty: actionForm.gold_Loss_Per_Qty===""?0:actionForm.gold_Loss_Per_Qty,
+        labour_Per_Grm:    actionForm.labour_Per_Grm===""?0:actionForm.labour_Per_Grm,
+        labour_Per_Qty:    actionForm.labour_Per_Qty===""?0:actionForm.labour_Per_Qty,
+        diamond_XML:  buildDiamondXml(stoneRows.diamond),
+        cLRSTONE_XML: buildClrStnXml(stoneRows.colour),
+        oTHERSTN_XML: buildOtherStnXml(stoneRows.other),
+      };
+      const { data } = await api.post(`${BASE_URL}/api/order/OrderComplete`, payload);
+      if (data.statusCode === 1) {
+        toast.success('Order marked as completed!'); refresh();
+        onClose();
+      } else {
+        toast.error(data?.message);
+      }
     } catch { toast.error('Error completing order'); } finally { setActionLoading(false); }
   };
 
@@ -471,10 +785,10 @@ useEffect(() => {
         </div>
       );
     }
-/*Assing To Desginer */
-if(order.order_Status==='Assigned To Designer')
-{
-  return (
+
+    /* Assigned To Designer */
+    if (order.order_Status === 'Assigned To Designer') {
+      return (
         <div className="card border-0 bg-light mt-2">
           <div className="card-body">
             <div className="d-flex gap-2">
@@ -483,9 +797,9 @@ if(order.order_Status==='Assigned To Designer')
           </div>
         </div>
       );
-}
+    }
+
     /* Step 2 — Design Uploaded */
-        /* Step 2 — Design Uploaded */
     if (order.order_Status === 'Design Uploaded') {
       const isCustomerRework = order.order_Type === 'Customer Rework';
 
@@ -515,7 +829,6 @@ if(order.order_Status==='Assigned To Designer')
                   </div>
                 )}
               </>
-
             ) : (
               <>
                 <SectionLabel>Review CAD Design</SectionLabel>
@@ -568,11 +881,11 @@ if(order.order_Status==='Assigned To Designer')
     if (order.order_Status === 'Design Approved') {
       return (
         <>
-        <div className="alert alert-info py-2 mt-2 mb-0">
-          <small>⏳ Waiting for <strong>customer confirmation</strong>. No action required.</small>          
-        </div>
-        <br/>
-        <button className="btn btn-sm btn-outline-danger" onClick={() => setCancelModal(true)}>Cancel Order</button>
+          <div className="alert alert-info py-2 mt-2 mb-0">
+            <small>⏳ Waiting for <strong>customer confirmation</strong>. No action required.</small>
+          </div>
+          <br />
+          <button className="btn btn-sm btn-outline-danger" onClick={() => setCancelModal(true)}>Cancel Order</button>
         </>
       );
     }
@@ -725,76 +1038,87 @@ if(order.order_Status==='Assigned To Designer')
     }
 
     /* Step 5 — Assigned to Production */
-    if (order.order_Status === 'Assigned To Production' && user.user_Type==="ADMIN") {
+    if (order.order_Status === 'Assigned To Production' && user.user_Type === 'ADMIN') {
       return (
         <div className="card border-0 bg-light mt-2">
           <div className="card-body">
             <SectionLabel>Complete Order</SectionLabel>
             <div className="row g-2 mb-3">
               {[
-                { key: 'production_KT',  label: 'Production KT *', step:'0.01',readonly:false}, 
-                { key: 'final_Gross_Weight',  label: 'Final Gross Weight *', step:'0.01',readonly:false }, 
-                { key: 'final_Noof_Diamonds',  label: 'No. of Diamonds' , step:'1',readonly:false},               
-                { key: 'final_Diamond_Weight', label: 'Final Diamond Weight' , step:'0.001',readonly:false},
-                { key: 'diamond_Value', label: 'Diamond Value' , step:'0.001',readonly:false},
-                { key: 'noOfColour_Stone',  label: 'No. of Colour Stone' , step:'1',readonly:false},
-                { key: 'colourStone_Weight', label: 'Colour Stone Weight' , step:'0.001',readonly:false},
-                { key: 'colour_Stone_Value', label: 'Colour Stone Value' , step:'0.001',readonly:false},
-                { key: 'other_NoofColour_Stone',  label: 'Other No. of Colour Stone', step:'1',readonly:false },
-                { key: 'other_ColourStone_Weight', label: 'Other Colour Stone Weight' , step:'0.001',readonly:false},
-                { key: 'other_Colour_Stone_Value', label: 'Other Colour Stone Value' , step:'0.001',readonly:false},
-                { key: 'final_Net_Weight',     label: 'Final Net Weight' , step:'0.001',readonly:false},
-                { key: 'final_Net_Weight_24kt',     label: 'Final Net Weight (24KT)' , step:'0.001',readonly:false},
-                 { key: 'labour_Charge',     label: 'Labour Charge *' , step:'0.001',readonly:false},
-                  { key: 'gold_Loss',     label: 'Gold Loss *' , step:'0.001',readonly:false},
-                   { key: 'gold_Loss_24kt',     label: '24kt Gold Loss *' , step:'0.001',readonly:false},
-                   { key: 'certificate_Charge',     label: 'Certificate Charge *' , step:'0.001',readonly:false},
-                   { key: 'other_Charges',     label: 'Other Charges *' , step:'0.001',readonly:false},
-                   { type: 'divider', title: 'Ledger Entry' },
-
-                { key: 'billAmount',           label: 'Bill Amount *' , step:'0.001',readonly:true},
-                { key: 'gold24ktWeight',       label: '24kt Gold Weight' , step:'0.001',readonly:true },
-              ].map(f => (
-                <>
-               {f.type === 'divider'? <div className="col-12">
-                <div className="d-flex align-items-center my-2">
-                          <span className="fw-semibold me-2">{f.title}</span>
-                          <hr className="flex-grow-1 m-0" />
-                        </div>
-              </div>:
-                
-                <div className="col-md-4" key={f.key}>
-                  <label className="form-label small fw-semibold">{f.label}</label>
-                  <input
-  type="text"
-  readOnly={f.readonly}
-  inputMode={integerFields.includes(f.key) ? "numeric" : "decimal"}
-  className="form-control form-control-sm"
-  value={actionForm[f.key]}
-  onChange={(e) => {
-    let value = e.target.value;
-
-    if (decimalFields.includes(f.key)) {
-      // Allow up to 3 decimal places
-      if (/^\d*\.?\d{0,3}$/.test(value) || value === '') {
-        setActionForm(prev => ({
-          ...prev,
-          [f.key]: value
-        }));
-      }
-    } else {
-      // Integer only
-      if (/^\d*$/.test(value)) {
-        setActionForm(prev => ({
-          ...prev,
-          [f.key]: value
-        }));
-      }
-    }
-  }}
-/>
-                </div>}
-                </>
+                { key: 'production_KT',            label: 'Production KT *',           step: '0.01',  readonly: false },
+                { key: 'production_KT_Per',        label: 'Production KT % *',         step: '0.01',  readonly: false },
+                { key: 'final_Gross_Weight',       label: 'Final Gross Weight *',      step: '0.01',  readonly: false },                
+                { key: 'final_Noof_Diamonds',      label: 'No. of Diamonds',           step: '1',     readonly: true },
+                { key: 'final_Diamond_Weight',     label: 'Final Diamond Weight',      step: '0.001', readonly: true },
+                { key: 'diamond_Value',            label: 'Diamond Value',             step: '0.001', readonly: true, stone: 'diamond' },
+                { key: 'noOfColour_Stone',         label: 'No. of Colour Stone',       step: '1',     readonly: true },
+                { key: 'colourStone_Weight',       label: 'Colour Stone Weight',       step: '0.001', readonly: true },
+                { key: 'colour_Stone_Value',       label: 'Colour Stone Value',        step: '0.001', readonly: true, stone: 'colour' },
+                { key: 'other_NoofColour_Stone',   label: 'Other No. of Colour Stone', step: '1',     readonly: true },
+                { key: 'other_ColourStone_Weight', label: 'Other Colour Stone Weight', step: '0.001', readonly: true },
+                { key: 'other_Colour_Stone_Value', label: 'Other Colour Stone Value',  step: '0.001', readonly: true, stone: 'other' },
+                { key: 'final_Net_Weight',         label: 'Final Net Weight',          step: '0.001', readonly: true },
+                { key: 'final_Net_Weight_24kt',    label: 'Final Net Weight (24KT)',   step: '0.001', readonly: true },
+                { type: 'break' },
+                { key: 'labour_Per_Grm',           label: 'Labour / Gram',             step: '0.001', readonly: false, mutex: 'labour_Per_Qty' },
+                { key: 'labour_Per_Qty',           label: 'Flat Labour / Qty',         step: '0.001', readonly: false, mutex: 'labour_Per_Grm' },
+                { key: 'labour_Charge',            label: 'Labour Charge *',           step: '0.001', readonly: true },
+                { key: 'gold_Loss_Percent',        label: 'Gold Loss %',               step: '0.01',  readonly: false, mutex: 'gold_Loss_Per_Qty' },
+                { key: 'gold_Loss_Per_Qty',        label: 'Gold Loss / Production KT', step: '0.001', readonly: false, mutex: 'gold_Loss_Percent' },
+                { key: 'gold_Loss',                label: 'Gold Loss *',               step: '0.001', readonly: true },
+                { key: 'gold_Loss_24kt',           label: '24kt Gold Loss *',          step: '0.001', readonly: true },
+                { key: 'certificate_Charge',       label: 'Certificate Charge *',      step: '0.001', readonly: false },
+                { key: 'other_Charges',            label: 'Other Charges *',           step: '0.001', readonly: false },
+                { type: 'divider', title: 'Ledger Entry' },
+                { key: 'billAmount',               label: 'Bill Amount *',             step: '0.001', readonly: true },
+                { key: 'gold24ktWeight',           label: '24kt Gold Weight',          step: '0.001', readonly: true },
+              ].map((f, i) => (
+                <React.Fragment key={f.key || `divider-${i}`}>
+                  {f.type === 'break' ? (
+                    <div className="col-md-4">
+                    </div>
+                  ) :
+                  f.type === 'divider' ? (
+                    <div className="col-12">
+                      <div className="d-flex align-items-center my-2">
+                        <span className="fw-semibold me-2">{f.title}</span>
+                        <hr className="flex-grow-1 m-0" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="col-md-4">
+                      <label className="form-label small fw-semibold">{f.label}</label>
+                      <div className={f.stone ? 'input-group input-group-sm' : ''}>
+                        <input
+                          type="text"
+                          readOnly={f.readonly}
+                          inputMode={integerFields.includes(f.key) ? 'numeric' : 'decimal'}
+                          className="form-control form-control-sm"
+                          value={actionForm[f.key]}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const ok = decimalFields.includes(f.key)
+                              ? /^\d*\.?\d{0,3}$/.test(value)   // up to 3 decimals
+                              : /^\d*$/.test(value);            // integer only
+                            if (!ok) return;
+                            setActionForm(prev => {
+                              const next = { ...prev, [f.key]: value };
+                              // e.g. entering Labour/Gram clears Flat Labour/Qty, and vice versa
+                              if (f.mutex && num(value) > 0) next[f.mutex] = '';
+                              return next;
+                            });
+                          }}
+                        />
+                        {f.stone && (
+                          <button type="button" className="btn btn-outline-primary"
+                            onClick={() => setStoneModal(f.stone)}>
+                            Details{stoneRows[f.stone].length ? ` (${stoneRows[f.stone].length})` : ''}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </React.Fragment>
               ))}
             </div>
             <button className="btn btn-sm btn-success" onClick={completeOrder} disabled={actionLoading}>
@@ -941,7 +1265,8 @@ if(order.order_Status==='Assigned To Designer')
                   </div>
                 </div>
               )}
- {/* Customer Images */}
+
+              {/* Customer Images */}
               {imageFields.some(f => order[f.key]) && (
                 <div className="mb-4">
                   <SectionLabel>Customer Images</SectionLabel>
@@ -967,62 +1292,50 @@ if(order.order_Status==='Assigned To Designer')
                   </div>
                 </div>
               )}
-              <div className='row'>
-              {/* Designer Details */}
-              {(order.designer_Weight || order.designer_Diamond_Weight || order.designer_NoOf_Diamonds) && (
-                <div className="col-6">
-                  <SectionLabel>Designer Details</SectionLabel>
-                  <div className="row g-0">
-                    <InfoRow label="Designer Weight"          value={order.designer_Weight} />
-                    <InfoRow label="Designer Diamond Weight"  value={order.designer_Diamond_Weight} />
-                    <InfoRow label="Designer No. of Diamonds" value={order.designer_NoOf_Diamonds} />
+
+              <div className="row">
+                {/* Designer Details */}
+                {(order.designer_Weight || order.designer_Diamond_Weight || order.designer_NoOf_Diamonds) && (
+                  <div className="col-6">
+                    <SectionLabel>Designer Details</SectionLabel>
+                    <div className="row g-0">
+                      <InfoRow label="Designer Weight"          value={order.designer_Weight} />
+                      <InfoRow label="Designer Diamond Weight"  value={order.designer_Diamond_Weight} />
+                      <InfoRow label="Designer No. of Diamonds" value={order.designer_NoOf_Diamonds} />
+                    </div>
                   </div>
-                </div>
-              )}
-              {/* CAD Image */}
-              {order.caD_Image_URL && (
-                <div className="col-4">
-                  <SectionLabel>CAD Design</SectionLabel>
-                  <img src={imgUrl(order.caD_Image_URL)} alt="CAD Design" className="rounded"
-                    style={{ maxHeight: 200, cursor: 'zoom-in', objectFit: 'contain', border: '1px solid #e9ecef' }}
-                    onClick={() => setImgViewer(imgUrl(order.caD_Image_URL))} />
-                </div>
-              )}
-</div>
+                )}
+                {/* CAD Image */}
+                {order.caD_Image_URL && (
+                  <div className="col-4">
+                    <SectionLabel>CAD Design</SectionLabel>
+                    <img src={imgUrl(order.caD_Image_URL)} alt="CAD Design" className="rounded"
+                      style={{ maxHeight: 200, cursor: 'zoom-in', objectFit: 'contain', border: '1px solid #e9ecef' }}
+                      onClick={() => setImgViewer(imgUrl(order.caD_Image_URL))} />
+                  </div>
+                )}
+              </div>
+
               {/* Completion Details */}
-              {(order.order_Complete_DT) && (
+              {order.order_Complete_DT && (
                 <div className="mb-4">
                   <SectionLabel>Completion Details</SectionLabel>
                   <div className="row g-0">
-  <InfoRow label="Final Net Weight"            value={order.final_Net_Weight} />
-  <InfoRow label="Final Diamond Weight"        value={order.final_Diamond_Weight} />
-  <InfoRow label="Final No. of Diamonds"       value={order.final_Noof_Diamonds} />
-
-  <InfoRow label="No. of Colour Stones"        value={order.noOfColour_Stone} />
-  <InfoRow label="Colour Stone Weight"         value={order.colourStone_Weight} />
-  <InfoRow label="Diamond Value"         value={order.diamond_Value} />
-  <InfoRow label="Colour Stone Value"         value={order.colour_Stone_Value} />
-  <InfoRow label="Other Colour Stone Value"         value={order.other_Colour_Stone_Value} />
-  <InfoRow label="Final Net Weight (24KT)"         value={order.final_Net_Weight_24kt} />
-  <InfoRow label="Certificate Charge"         value={order.certificate_Charge} />
-  <InfoRow label="Other Charges"         value={order.other_Charges} />
- {/* <InfoRow label="Other Colour Stones"         value={order.others_NoOfColour_Stone} />
-  <InfoRow label="Other Colour Stone Weight"   value={order.others_Colour_Stone_Weight} />
-
-  <InfoRow label="Gold Loss"                   value={order.gold_Loss} />
-  <InfoRow label="Labour Charge"               value={order.labour_Charge} />
-  <InfoRow label="Gold Loss (24Kt)"            value={order.gold_Loss_24kt} />
-  <InfoRow label="Final Gold Weight (24Kt)"    value={order.final_Gold_Weight_24kt} />
-  <InfoRow label="Bill Amount"                 value={order.bill_Amount} />*/}
-
-                    <InfoRow label="Completed On"          value={fmt(order.order_Complete_DT)} />
+                    <InfoRow label="Final Net Weight"          value={order.final_Net_Weight} />
+                    <InfoRow label="Final Diamond Weight"      value={order.final_Diamond_Weight} />
+                    <InfoRow label="Final No. of Diamonds"     value={order.final_Noof_Diamonds} />
+                    <InfoRow label="No. of Colour Stones"      value={order.noOfColour_Stone} />
+                    <InfoRow label="Colour Stone Weight"       value={order.colourStone_Weight} />
+                    <InfoRow label="Diamond Value"             value={order.diamond_Value} />
+                    <InfoRow label="Colour Stone Value"        value={order.colour_Stone_Value} />
+                    <InfoRow label="Other Colour Stone Value"  value={order.other_Colour_Stone_Value} />
+                    <InfoRow label="Final Net Weight (24KT)"   value={order.final_Net_Weight_24kt} />
+                    <InfoRow label="Certificate Charge"        value={order.certificate_Charge} />
+                    <InfoRow label="Other Charges"             value={order.other_Charges} />
+                    <InfoRow label="Completed On"              value={fmt(order.order_Complete_DT)} />
                   </div>
                 </div>
               )}
-
-              
-
-             
 
               {/* Action Panel */}
               {renderActionPanel()}
@@ -1144,6 +1457,17 @@ if(order.order_Status==='Assigned To Designer')
             </div>
           </div>
         </div>
+      )}
+
+      {/* Stone Details Popup (Diamond / Colour / Other) */}
+      {stoneModal && (
+        <StoneModal
+          key={stoneModal}
+          type={stoneModal}
+          initialRows={stoneRows[stoneModal]}
+          onSave={handleStoneSave}
+          onClose={() => setStoneModal(null)}
+        />
       )}
     </>
   );
